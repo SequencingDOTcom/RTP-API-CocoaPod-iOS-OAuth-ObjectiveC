@@ -9,11 +9,11 @@ Want to see it in action? A demo of the oAuth2 code is available here: https://o
 
 oAuth2 code is also available in the following languages: 
 
-* [Objective-C (CocoaPods plugin)](https://github.com/SequencingDOTcom/CocoaPods-plugin-provides-OAuth2-and-File-Selector) <- this repo
+* [Objective-C (CocoaPods plugin)](https://github.com/SequencingDOTcom/CocoaPods-Objective-C-iOS-plugin) <- this repo
 * [Objective-C (code)](https://github.com/SequencingDOTcom/oAuth2-code-and-demo/tree/master/objective-c)
-* [Swift (CocoaPods plugin)]
+* [Swift (CocoaPods plugin)](https://github.com/SequencingDOTcom/CocoaPods-Swift-iOS-plugin)
 * [Swift (code)](https://github.com/SequencingDOTcom/oAuth2-code-and-demo/tree/master/swift)
-* [Android (Maven plugin)](https://github.com/SequencingDOTcom/Maven-plugin-provides-OAuth2-and-File-Selector)
+* [Android (Maven plugin)](https://github.com/SequencingDOTcom/Maven-Android-plugin)
 * [Android (code)](https://github.com/SequencingDOTcom/oAuth2-code-and-demo/tree/master/android)
 * [PHP](https://github.com/SequencingDOTcom/oAuth2-code-and-demo/tree/master/php)
 * [Perl](https://github.com/SequencingDOTcom/oAuth2-code-and-demo/tree/master/perl)
@@ -26,6 +26,7 @@ Contents
 =========================================
 * Introduction
 * Implementation
+* App Chains
 * Authentication flow
 * Steps
 * Resources
@@ -50,9 +51,15 @@ To implement oAuth2 authentication for your app:
 
 2) Add [Sequencing.com's oAuth2 code](https://github.com/SequencingDOTcom/oAuth2-code-and-demo) from this repo to your app
 
-3) [Generate an oAuth2 secret](https://sequencing.com/api-secret-generator) and insert the secret into the oAuth2 code
+3) [Generate an oAuth2 secret](https://sequencing.com/api-secret-generator) and insert the secret into the OAuth2 code
 
-Once oAuth2 authentication is implemented, select one or more [app chains](https://sequencing.com/app-chains) that will provide information you can use to personalize your app.
+Once OAuth2 authentication is implemented, add [App Chains](https://sequencing.com/app-chains) that will provide your app with genetically tailored information about your app user. Your app can be programmed to use this informamtion to personalized the UX for each user.
+
+App Chains
+======================================
+Search and find app chains -> https://sequencing.com/app-chains/
+
+While there are already app chains to personalize most apps, if you need something but don't see an app chain for it, tell us! (ie email us: gittaca@sequencing.com).
 
 Each app chain is composed of 
 * an **API request** to Sequencing.com
