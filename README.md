@@ -53,7 +53,7 @@ To implement OAuth2 authentication for your app:
 
 2) Add [this plugin](http://cocoapods.org/pods/sequencing-oauth-api-objc) to your iOS app coded in Objective-C and insert the OAuth2 secret
 
-Once OAuth2 authentication is implemented, add [App Chains](https://sequencing.com/app-chains) that will provide your app with genetically tailored information about your app user. Your app can be programmed to use this informamtion to personalized the UX for each user.
+Once you've popped this plugin into your app, add one or more App Chains. Each app chain will provide your app with actionable information obtained from the app user's genes. Your app will be able to use this unique informamtion to provide a highly personalized UX for each user.
 
 App Chains
 ======================================
