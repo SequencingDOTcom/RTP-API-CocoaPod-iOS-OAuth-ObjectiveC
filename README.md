@@ -35,7 +35,7 @@ Contents
 
 Introduction
 =========================================
-The code in this repo can be used to quickly implement oAuth2 authentication for Sequencing.com's API. By adding OAuth2 authentication to your app, you'll then be able to use Sequencing.com's API to ehance your app with Real-Time Personalization.
+The code in this repo can be used to quickly implement OAuth2 authentication for Sequencing.com's API. By adding OAuth2 authentication to your app, you'll then be able to use Sequencing.com's API to ehance your app with Real-Time Personalization.
 
 The code has also been deployed and can be accessed online as an [OAuth2 demo](https://oauth-demo.sequencing.com/).
 * A end-user validates using thier Sequencing.com login and, if successfull, the demo will provide a list of genetic data files from the user's account at Sequencing.com.
@@ -49,9 +49,9 @@ To implement OAuth2 authentication for your app:
 
 1) [Register](https://sequencing.com/user/register/) for a free account
 
-2) Add [Sequencing.com's oAuth2 code](https://github.com/SequencingDOTcom/oAuth2-code-and-demo) from this repo to your app
+2) Add [this plugin](http://cocoapods.org/pods/sequencing-oauth-api-objc)to your iOS app coded in Objective-C
 
-3) [Generate an oAuth2 secret](https://sequencing.com/api-secret-generator) and insert the secret into the OAuth2 code
+3) [Generate an OAuth2 secret](https://sequencing.com/api-secret-generator) and insert the secret into the OAuth2 code
 
 Once OAuth2 authentication is implemented, add [App Chains](https://sequencing.com/app-chains) that will provide your app with genetically tailored information about your app user. Your app can be programmed to use this informamtion to personalized the UX for each user.
 
