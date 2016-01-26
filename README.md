@@ -1,15 +1,20 @@
-# CocoaPods module for quickly adding Sequencing.com's OAuth2 and File Selector to all Objective-C apps
+# CocoaPods plugin for quickly adding Sequencing.com's OAuth2 and File Selector to all Objective-C apps
 
 =========================================
-This repo contains CocoaPods module code for implementing Sequencing.com's oAuth2 authentication and File Selector for your app so that your app can securely access [Sequencing.com's](https://sequencing.com/) API and app chains. 
+This repo contains CocoaPods plugin code for implementing Sequencing.com's oAuth2 authentication and File Selector for your app so that your app can securely access [Sequencing.com's](https://sequencing.com/) API and app chains.
+
+This CocoaPods plugin can be found here: http://cocoapods.org/pods/sequencing-oauth-api-objc
 
 Want to see it in action? A demo of the oAuth2 code is available here: https://oauth-demo.sequencing.com/
 
 oAuth2 code is also available in the following languages: 
 
-* [Objective-C (without CocoaPods)](https://github.com/SequencingDOTcom/oAuth2-code-and-demo/tree/master/objective-c)
-* [Swift](https://github.com/SequencingDOTcom/oAuth2-code-and-demo/tree/master/swift)
-* [Android](https://github.com/SequencingDOTcom/oAuth2-code-and-demo/tree/master/android)
+* [Objective-C (CocoaPods plugin)](https://github.com/SequencingDOTcom/CocoaPods-plugin-provides-OAuth2-and-File-Selector) <- this repo
+* [Objective-C (code)](https://github.com/SequencingDOTcom/oAuth2-code-and-demo/tree/master/objective-c)
+* [Swift (CocoaPods plugin)]
+* [Swift (code)](https://github.com/SequencingDOTcom/oAuth2-code-and-demo/tree/master/swift)
+* [Android (Maven plugin)](https://github.com/SequencingDOTcom/Maven-plugin-provides-OAuth2-and-File-Selector)
+* [Android (code)](https://github.com/SequencingDOTcom/oAuth2-code-and-demo/tree/master/android)
 * [PHP](https://github.com/SequencingDOTcom/oAuth2-code-and-demo/tree/master/php)
 * [Perl](https://github.com/SequencingDOTcom/oAuth2-code-and-demo/tree/master/perl)
 * [Python (Django)](https://github.com/SequencingDOTcom/oAuth2-code-and-demo/tree/master/python-django)
