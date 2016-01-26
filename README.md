@@ -49,7 +49,7 @@ To implement OAuth2 authentication for your app:
 
 1) [Register](https://sequencing.com/user/register/) for a free account
 
-2) Add [this plugin](http://cocoapods.org/pods/sequencing-oauth-api-objc)to your iOS app coded in Objective-C
+2) Add [this plugin](http://cocoapods.org/pods/sequencing-oauth-api-objc) to your iOS app coded in Objective-C
 
 3) [Generate an OAuth2 secret](https://sequencing.com/api-secret-generator) and insert the secret into the OAuth2 code
 
