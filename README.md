@@ -1,13 +1,13 @@
 # CocoaPods plugin for quickly adding Sequencing.com's OAuth2 and File Selector to all Objective-C apps
 
 =========================================
-This repo contains CocoaPods plugin code for implementing Sequencing.com's oAuth2 authentication and File Selector for your app so that your app can securely access [Sequencing.com's](https://sequencing.com/) API and app chains.
+This repo contains CocoaPods plugin code for implementing Sequencing.com's OAuth2 authentication and File Selector for your app so that your app can securely access [Sequencing.com's](https://sequencing.com/) API and app chains.
 
 This CocoaPods plugin can be found here: http://cocoapods.org/pods/sequencing-oauth-api-objc
 
-Want to see it in action? A demo of the oAuth2 code is available here: https://oauth-demo.sequencing.com/
+Want to see it in action? A demo of the OAuth2 code is available here: https://oauth-demo.sequencing.com/
 
-oAuth2 code is also available in the following languages: 
+The code for this plugin is also available in the following languages: 
 
 * [Objective-C (CocoaPods plugin)](https://github.com/SequencingDOTcom/CocoaPods-Objective-C-iOS-plugin) <- this repo
 * [Objective-C (code)](https://github.com/SequencingDOTcom/oAuth2-code-and-demo/tree/master/objective-c)
@@ -26,7 +26,7 @@ Contents
 =========================================
 * Introduction
 * Implementation
-* App Chains
+* App chains
 * Authentication flow
 * Steps
 * Resources
@@ -35,9 +35,9 @@ Contents
 
 Introduction
 =========================================
-The code in this repo can be used to quickly implement oAuth2 authentication for Sequencing.com's API. By adding oAuth2 authentication to your app, you'll then be able to use Sequencing.com's API to ehance your app with Real-Time Personalization.
+The code in this repo can be used to quickly implement oAuth2 authentication for Sequencing.com's API. By adding OAuth2 authentication to your app, you'll then be able to use Sequencing.com's API to ehance your app with Real-Time Personalization.
 
-The code has also been deployed and can be accessed online as an [oAuth2 demo](https://oauth-demo.sequencing.com/).
+The code has also been deployed and can be accessed online as an [OAuth2 demo](https://oauth-demo.sequencing.com/).
 * A end-user validates using thier Sequencing.com login and, if successfull, the demo will provide a list of genetic data files from the user's account at Sequencing.com.
 * The demo will display a list of sample files if a user doesn't yet have access to his or her genetic data. These sample files are real genetic data files and are available for free for apps that use Sequencing.com's API.
 
@@ -45,7 +45,7 @@ To code Real-Time Personalization technology into apps, developers may [register
 
 Implementation
 ======================================
-To implement oAuth2 authentication for your app:
+To implement OAuth2 authentication for your app:
 
 1) [Register](https://sequencing.com/user/register/) for a free account
 
@@ -63,7 +63,7 @@ While there are already app chains to personalize most apps, if you need somethi
 
 Each app chain is composed of 
 * an **API request** to Sequencing.com
- * this request is secured using oAuth2
+ * this request is secured using OAuth2
 * analysis of the app user's genes
  * each app chain analyzes a specific trait or condition
  * there are thousands of app chains to choose from
@@ -136,14 +136,14 @@ Following POST parameters have to be sent
 
 ### Step 5: Application Receives Access Token
 
-If the authorization is valid, the API will send a JSON response containing the access token  to the application.
+If the authorization is valid, the API will send a JSON response containing the access token to the application.
 
 Resources
 ======================================
 * [App chains](https://sequencing.com/app-chains)
 * [File selector code](https://github.com/SequencingDOTcom/File-Selector-code)
 * [Developer center](https://sequencing.com/developer-center)
-* [Developer Documentation](https://sequencing.com/developer-documentation/)
+* [Developer documentation](https://sequencing.com/developer-documentation/)
 
 Maintainers
 ======================================
