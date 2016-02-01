@@ -325,7 +325,7 @@ static NSString *filesPath      = @"/DataSourceList?uploaded=true&shared=true";
     NSString *letters = @"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     NSMutableString *randomString = [NSMutableString stringWithCapacity: len];
     for (int i = 0; i < len; i++) {
-        [randomString appendFormat: @"%C", [letters characterAtIndex: arc4random_uniform([letters length])]];
+        [randomString appendFormat: @"%C", [letters characterAtIndex: (NSUInteger) arc4random_uniform((u_int32_t)[letters length])]];
     }
     return randomString;
 }
