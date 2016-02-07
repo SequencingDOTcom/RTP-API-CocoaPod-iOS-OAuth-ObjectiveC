@@ -1,142 +1,123 @@
-# CocoaPods plugin for quickly adding Sequencing.com's OAuth2 and File Selector to iOS apps coded in Objective-C
+# CocoaPods plugin for quickly adding Sequencing.com's OAuth2 and File Selector to iOS apps coded in Swift
 
 =========================================
-This repo contains CocoaPods plugin code for implementing Sequencing.com's OAuth2 authentication and File Selector for your app so that your app can securely access [Sequencing.com's](https://sequencing.com/) API and app chains.
-
-This CocoaPods plugin can be found here: http://cocoapods.org/pods/sequencing-oauth-api-objc
-
-Want to see it in action? A demo of the OAuth2 code is available here: https://oauth-demo.sequencing.com/
-
-The code for this plugin is also available in the following languages: 
-
-* [Objective-C (CocoaPods plugin)](https://github.com/SequencingDOTcom/CocoaPods-Objective-C-iOS-plugin) <- this repo
-* [Objective-C (code)](https://github.com/SequencingDOTcom/oAuth2-code-and-demo/tree/master/objective-c)
-* [Swift (CocoaPods plugin)](https://github.com/SequencingDOTcom/CocoaPods-Swift-iOS-plugin)
-* [Swift (code)](https://github.com/SequencingDOTcom/oAuth2-code-and-demo/tree/master/swift)
-* [Android (Maven plugin)](https://github.com/SequencingDOTcom/Maven-Android-plugin)
-* [Android (code)](https://github.com/SequencingDOTcom/oAuth2-code-and-demo/tree/master/android)
-* [PHP](https://github.com/SequencingDOTcom/oAuth2-code-and-demo/tree/master/php)
-* [Perl](https://github.com/SequencingDOTcom/oAuth2-code-and-demo/tree/master/perl)
-* [Python (Django)](https://github.com/SequencingDOTcom/oAuth2-code-and-demo/tree/master/python-django)
-* [Java (Servlet)](https://github.com/SequencingDOTcom/oAuth2-code-and-demo/tree/master/java-servlet)
-* [Java (Spring)](https://github.com/SequencingDOTcom/oAuth2-code-and-demo/tree/master/java-spring)
-* [.NET/C#](https://github.com/SequencingDOTcom/oAuth2-code-and-demo/tree/master/dot-net-cs)
+This repo contains CocoaPods plugin code for implementing Sequencing.com's OAuth2 authentication and File Selector for your Swift iOS app so that your app can securely access [Sequencing.com's](https://sequencing.com/) API and app chains.
 
 Contents
 =========================================
-* Introduction
-* Implementation
-* App chains
-* Authentication flow
-* Steps
+* Cocoa Pod integration
 * Resources
 * Maintainers
 * Contribute
 
-Introduction
-=========================================
-The code in this repo can be used to quickly implement OAuth2 authentication for Sequencing.com's API. By adding OAuth2 authentication to your app, you'll then be able to use Sequencing.com's API to ehance your app with Real-Time Personalization.
-
-The code has also been deployed and can be accessed online as an [OAuth2 demo](https://oauth-demo.sequencing.com/).
-* A end-user validates using thier Sequencing.com login and, if successfull, the demo will provide a list of genetic data files from the user's account at Sequencing.com.
-* The demo will display a list of sample files if a user doesn't yet have access to his or her genetic data. These sample files are real genetic data files and are available for free for apps that use Sequencing.com's API.
-
-To code Real-Time Personalization technology into apps, developers may [register for a free account](https://sequencing.com/user/register/) at Sequencing.com. App development with RTP is always free.
-
-Implementation
-======================================
-To implement OAuth2 authentication for your app:
-
-1) [Register](https://sequencing.com/user/register/) for a free account
-
-3) [Generate an OAuth2 secret](https://sequencing.com/api-secret-generator) for your app
-
-2) Add [this plugin](http://cocoapods.org/pods/sequencing-oauth-api-objc) to your iOS app coded in Objective-C and insert the OAuth2 secret
-
-Once you've popped this plugin into your app, add one or more App Chains. Each app chain will provide your app with actionable information obtained from the app user's genes. Your app will be able to use this unique informamtion to provide a highly personalized UX for each user.
-
-App Chains
-======================================
-Search and find app chains -> https://sequencing.com/app-chains/
-
-While there are already app chains to personalize most apps, if you need something but don't see an app chain for it, tell us! (ie email us: gittaca@sequencing.com).
-
-Each app chain is composed of 
-* an **API request** to Sequencing.com
- * this request is secured using OAuth2
-* analysis of the app user's genes
- * each app chain analyzes a specific trait or condition
- * there are thousands of app chains to choose from
- * all analysis occurs in real-time at Sequencing.com
-* an **API response** to your app
- * the information provided by the response allows your app to tailor itself to the app user based on the user's genes.
- * the documentation for each app chain provides a list of all possible API responses. The response for most app chains are simply 'Yes' or 'No'.
-
-Example
-* App Chain: It is very important for this person's health to apply sunscreen with SPF +30 whenever it is sunny or even partly sunny.
-* Possible responses: Yes, No, Insufficient Data, Error
-
-
-Authentication flow
+Cocoa Pod integration
 ======================================
 
-Sequencing.com uses standard OAuth approach which enables applications to obtain limited access to user accounts on an HTTP service from 3rd party applications without exposing the user's password. OAuth acts as an intermediary on behalf of the end user, providing the service with an access token that authorizes specific account information to be shared.
+You need to follow instruction below if you want to install and use OAuth logic and file selector logic in your existed or new project.
 
-![Authentication sequence diagram]
-(https://github.com/SequencingDOTcom/oAuth2-code-and-demo/blob/master/screenshots/oauth_activity.png)
+* create a new project in Xcode
+* install pod (see instruction here https://cocoapods.org > getting started)
+	* create Podfile in your project directory:
+```$ pod init```
+    * specify "sequencing-oauth-api-objc" pod parameters:
+```pod 'sequencing-oauth-api-objc', '~> 1.0.1'```
+	* install the dependency in your project:
+```$ pod install```
+	* always open the Xcode workspace instead of the project file:
+```$ open *.xcworkspace```
+* use authorization method(s)
+    * add import ```#import "SQOAuth.h"```
+	* for authorization you need to specify your application parameters in NSString format (BEFORE using authorization methods) 
+		```
+		static NSString *const CLIENT_ID	 = @"your CLIENT_ID here";
+		static NSString *const CLIENT_SECRET = @"your CLIENT_SECRET here";
+		static NSString *const REDIRECT_URI	 = @"REDIRECT_URI here";
+		static NSString *const SCOPE         = @"SCOPE here";
+		```    
 
+	* next step you need to register these parameters into application instance
+		```
+		[[SQOAuth sharedInstance] 
+		registrateApplicationParametersCliendID:CLIENT_ID
+		ClientSecret:CLIENT_SECRET
+		RedirectUri:REDIRECT_URI
+		Scope:SCOPE];
+		```
+	* you can authorize your user then (e.g. via "login" button)
+	For authorization you can use either "authorizeUser" or "authorizeUserAndGetToken" method (via shared instance init):
 
-## Steps
+		1.
 
-### Step 1: Authorization Code Link
+		```
+		[[SQOAuth sharedInstance] authorizeUser:^(SQAuthResult *result) {
+			// your code here
+		}];
+		```
+		
+		```authorizeUser``` will return a block with "SQAuthResult" shared instance.
+		```SQAuthResult``` - is a shared instance that contains 2 properties:
+		* ```SQToken *token```		- it is a always up-to-date token
+		* ```BOOL isAuthorized```	- property that indicates user s authorized status
+			
+		Pay attention that you do not need to care about token refresh. It's handled automatically in auth logic.
+		There is an internal method that verifies if token is expired and refreshes it.
+		
+		2.
 
-First, the user is given an authorization code link that looks like the following:
+		```
+		[[SQOAuth sharedInstance] authorizeUserAndGetToken:^(SQToken *token) {
+			// your code here
+		}];
+		```
+		
+		```authorizeUserAndGetToken``` will return a block with object of SQToken class directly.
+		SQToken object contains following 5 properties with clear titles for usage:
 
-```
-https://sequencing.com/oauth2/authorize?redirect_uri=REDIRECT_URL&response_type=code&state=STATE&client_id=CLIENT_ID&scope=SCOPES
-```
+		```	
+		NSString *accessToken
+		NSDate   *expirationDate
+		NSString *tokenType
+		NSString *scope
+		NSString *refreshToken
+		```
 
-Here is an explanation of the link components:
+* use file selector method(s)
+	* add import 
+	```#import "SQAPI.h"```
+	* you can load/get files, list of own files or list of sample files, via methods "loadOwnFiles" and "loadSampleFiles" (via shared instance init):
 
-* https://sequencing.com/oauth2/authorize: the API authorization endpoint
-* client_id=CLIENT_ID: the application's client ID (how the API identifies the application)
-* redirect_uri=REDIRECT_URL: where the service redirects the user-agent after an authorization code is granted
-* response_type=code: specifies that your application is requesting an authorization code grant
-* scope=CODES: specifies the level of access that the application is requesting
+		1.
+		```
+		[[SQAPI sharedInstance] loadOwnFiles:^(NSArray *myFiles) {
+			// your code here
+		}];
+		```
+		"loadOwnFiles" will return a block with NSArray of dictionary objects with file details inside.
 
-![login dialog](https://github.com/SequencingDOTcom/oAuth2-code-and-demo/blob/master/screenshots/oauth_auth.png)
+		2.
+		```
+		[[SQAPI sharedInstance] loadSampleFiles:^(NSArray *sampleFiles) {
+			// your code here
+		}];
+		```
+    	
+	    	"loadSampleFiles" will return a block with NSArray of dictionary objects with file details inside.
+    
+	* each file contains following keys and values:
 
-### Step 2: User Authorizes Application
-
-When the user clicks the link, they must first log in to the service, to authenticate their identity (unless they are already logged in). Then they will be prompted by the service to authorize or deny the application access to their account. Here is an example authorize application prompt
-
-![grant dialog](https://github.com/SequencingDOTcom/oAuth2-code-and-demo/blob/master/screenshots/oauth_grant.png)
-
-### Step 3: Application Receives Authorization Code
-
-If the user clicks "Authorize Application", the service redirects the user-agent to the application redirect URI, which was specified during the client registration, along with an authorization code. The redirect would look something like this (assuming the application is "php-oauth-demo.sequencing.com"):
-
-```
-https://php-oauth-demo.sequencing.com/index.php?code=AUTHORIZATION_CODE
-```
-
-### Step 4: Application Requests Access Token
-
-The application requests an access token from the API, by passing the authorization code along with authentication details, including the client secret, to the API token endpoint. Here is an example POST request to Sequencing.com token endpoint:
-
-```
-https://sequencing.com/oauth2/token
-```
-
-Following POST parameters have to be sent
-
-* grant_type='authorization_code'
-* code=AUTHORIZATION_CODE (where AUTHORIZATION_CODE is a code acquired in a "code" parameter in the result of redirect from sequencing.com)
-* redirect_uri=REDIRECT_URL (where REDIRECT_URL is the same URL as the one used in step 1)
-
-### Step 5: Application Receives Access Token
-
-If the authorization is valid, the API will send a JSON response containing the access token to the application.
+		```
+		DateAdded:		"string value"
+		Ext:			"string value"
+		FileCategory:	"string value"
+		FileSubType:	"string value"
+		FileType:		"string value"
+		FriendlyDesc1:	"string value"
+		FriendlyDesc2:	"string value"
+		Id:				"string value"
+		Name:			"string value"
+		Population:		"string value"
+		Sex:			"string value"
+		```
 
 Resources
 ======================================
