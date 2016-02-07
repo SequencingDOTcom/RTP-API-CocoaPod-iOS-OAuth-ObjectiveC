@@ -3,6 +3,9 @@
 =========================================
 This repo contains CocoaPods plugin code for implementing Sequencing.com's OAuth2 authentication and File Selector for your Swift iOS app so that your app can securely access [Sequencing.com's](https://sequencing.com/) API and app chains.
 
+* oAuth flow is explained [here](https://github.com/SequencingDOTcom/OAuth2-code-with-demo)
+* Example that uses this Pod is located [here](https://github.com/SequencingDOTcom/OAuth2-code-with-demo/tree/master/objective-c)
+
 Contents
 =========================================
 * Cocoa Pod integration
