@@ -1,7 +1,7 @@
 # CocoaPods plugin for quickly adding Sequencing.com's OAuth2 and File Selector to iOS apps coded in Objective-C
 
 =========================================
-This repo contains CocoaPods plugin code for implementing Sequencing.com's OAuth2 authentication and File Selector for your Swift iOS app so that your app can securely access [Sequencing.com's](https://sequencing.com/) API and app chains.
+This repo contains CocoaPods plugin code for implementing Sequencing.com's OAuth2 authentication for your Objective-C iOS app so that your app can securely access [Sequencing.com's](https://sequencing.com/) API and app chains.
 
 * oAuth flow is explained [here](https://github.com/SequencingDOTcom/OAuth2-code-with-demo)
 * Example that uses this Pod is located [here](https://github.com/SequencingDOTcom/OAuth2-code-with-demo/tree/master/objective-c)
@@ -19,17 +19,16 @@ Cocoa Pod integration
 You need to follow instruction below if you want to install and use OAuth logic and file selector logic in your existed or new project.
 
 * create a new project in Xcode
+
 * install pod (see instruction here https://cocoapods.org > getting started)
-	* create Podfile in your project directory:
-```$ pod init```
-    * specify "sequencing-oauth-api-objc" pod parameters:
-```pod 'sequencing-oauth-api-objc', '~> 1.0.1'```
-	* install the dependency in your project:
-```$ pod install```
-	* always open the Xcode workspace instead of the project file:
-```$ open *.xcworkspace```
+	* create Podfile in your project directory: ```$ pod init```
+    * specify "sequencing-oauth-api-objc" pod parameters: ```$ pod 'sequencing-oauth-api-objc', '~> 1.0.1'```
+	* install the dependency in your project: ```$ pod install```
+	* always open the Xcode workspace instead of the project file: ```$ open *.xcworkspace```
+
 * use authorization method(s)
-    * add import ```#import "SQOAuth.h"```
+	* add import ```#import "SQOAuth.h"```
+	
 	* for authorization you need to specify your application parameters in NSString format (BEFORE using authorization methods) 
 		```
 		static NSString *const CLIENT_ID	 = @"your CLIENT_ID here";
@@ -38,44 +37,58 @@ You need to follow instruction below if you want to install and use OAuth logic 
 		static NSString *const SCOPE         = @"SCOPE here";
 		```    
 
-	* next step you need to register these parameters into application instance
+	* register these parameters into OAuth module instance
 		```
-		[[SQOAuth sharedInstance] 
-		registrateApplicationParametersCliendID:CLIENT_ID
-		ClientSecret:CLIENT_SECRET
-		RedirectUri:REDIRECT_URI
-		Scope:SCOPE];
-		```
-	* you can authorize your user then (e.g. via "login" button)
-	For authorization you can use either "authorizeUser" or "authorizeUserAndGetToken" method (via shared instance init):
-
-		1.
-
-		```
-		[[SQOAuth sharedInstance] authorizeUser:^(SQAuthResult *result) {
-			// your code here
-		}];
+		[[SQOAuth sharedInstance] registrateApplicationParametersCliendID:CLIENT_ID ClientSecret:CLIENT_SECRET RedirectUri:REDIRECT_URI Scope:SCOPE];
 		```
 		
-		```authorizeUser``` will return a block with "SQAuthResult" shared instance.
-		```SQAuthResult``` - is a shared instance that contains 2 properties:
-		* ```SQToken *token```		- it is a always up-to-date token
-		* ```BOOL isAuthorized```	- property that indicates user s authorized status
-			
-		Pay attention that you do not need to care about token refresh. It's handled automatically in auth logic.
-		There is an internal method that verifies if token is expired and refreshes it.
-		
-		2.
-
+	* add import for protocols
 		```
-		[[SQOAuth sharedInstance] authorizeUserAndGetToken:^(SQToken *token) {
-			// your code here
-		}];
+		#import "SQAuthorizationProtocol.h"
+		#import "SQTokenRefreshProtocol.h"
 		```
 		
-		```authorizeUserAndGetToken``` will return a block with object of SQToken class directly.
-		SQToken object contains following 5 properties with clear titles for usage:
+	* subscribe your class for these protocols
+		```
+		<SQAuthorizationProtocol, SQTokenRefreshProtocol>
+		```
+	
+	* subscribe your class as delegate for such protocols
+		```
+		[[SQOAuth sharedInstance] setAuthorizationDelegate:self];
+		[[SQOAuth sharedInstance] setRefreshTokenDelegate:self];
+		```
+	
+	* add methods for SQAuthorizationProtocol
+		```
+		- (void)userIsSuccessfullyAuthorized:(SQToken *)token {
+			dispatch_async(dispatch_get_main_queue(), ^{
+				// your code is here for successfull user authorization
+			});
+		}
 
+		- (void)userIsNotAuthorized {
+			dispatch_async(dispatch_get_main_queue(), ^{
+				// your code is here for unseccessfull user authorization
+			});
+		}
+		```
+	
+	* add method for SQTokenRefreshProtocol - it is called when token is refreshed
+		```
+		- (void)tokenIsRefreshed:(SQToken *)updatedToken {
+			// your code is here to handle refreshed token
+		}
+		```
+	
+	* you can authorize your user now (e.g. via "login" button). For authorization you can use ```authorizeUser``` method. You can get access via shared instance of SQOAuth class):
+		```
+		[[SQOAuth sharedInstance] authorizeUser];
+		```
+		
+		Related method from SQAuthorizationProtocol will be called as a result
+	
+	* in method ```userIsSuccessfullyAuthorized``` you'll receive SQToken object, that contains following 5 properties with clear titles for usage:
 		```	
 		NSString *accessToken
 		NSDate   *expirationDate
@@ -83,44 +96,15 @@ You need to follow instruction below if you want to install and use OAuth logic 
 		NSString *scope
 		NSString *refreshToken
 		```
+		
+	* in method ```tokenIsRefreshed``` you'll receive updated token with the same object model.
+		DO NOT OVERRIDE REFRESH_TOKEN PROPERTY for TOKEN object - it comes as null after refresh token request
+	
+	* for your extra needs you can always get access directly to the up-to-day token object which is stored in SQAuthResult class.
+		```
+		[[SQAuthResult sharedInstance] token];
+		```
 
-* use file selector method(s)
-	* add import 
-	```#import "SQAPI.h"```
-	* you can load/get files, list of own files or list of sample files, via methods "loadOwnFiles" and "loadSampleFiles" (via shared instance init):
-
-		1.
-		```
-		[[SQAPI sharedInstance] loadOwnFiles:^(NSArray *myFiles) {
-			// your code here
-		}];
-		```
-		"loadOwnFiles" will return a block with NSArray of dictionary objects with file details inside.
-
-		2.
-		```
-		[[SQAPI sharedInstance] loadSampleFiles:^(NSArray *sampleFiles) {
-			// your code here
-		}];
-		```
-    	
-	    	"loadSampleFiles" will return a block with NSArray of dictionary objects with file details inside.
-    
-	* each file contains following keys and values:
-
-		```
-		DateAdded:		"string value"
-		Ext:			"string value"
-		FileCategory:	"string value"
-		FileSubType:	"string value"
-		FileType:		"string value"
-		FriendlyDesc1:	"string value"
-		FriendlyDesc2:	"string value"
-		Id:				"string value"
-		Name:			"string value"
-		Population:		"string value"
-		Sex:			"string value"
-		```
 
 Resources
 ======================================
