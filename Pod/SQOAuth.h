@@ -6,11 +6,16 @@
 #import <Foundation/Foundation.h>
 #import "SQAuthResult.h"
 #import "SQToken.h"
+#import "SQAuthorizationProtocol.h"
+#import "SQTokenRefreshProtocol.h"
 
 @class SQAuthResult;
 @class SQToken;
 
 @interface SQOAuth : NSObject
+
+@property (strong, nonatomic) id <SQAuthorizationProtocol> authorizationDelegate;
+@property (strong, nonatomic) id <SQTokenRefreshProtocol> refreshTokenDelegate;
 
 // designated initializer
 + (instancetype)sharedInstance;
@@ -21,10 +26,8 @@
                                     RedirectUri:(NSString *)redirect_uri
                                           Scope:(NSString *)scope;
 
-// authorization method that return authResult object (include token within)
-- (void)authorizeUser:(void(^)(SQAuthResult *result))result;
+// authorization method that uses SQAuthorizationProtocol as result
+- (void)authorizeUser;
 
-// authorization method that return token object directly
-- (void)authorizeUserAndGetToken:(void (^)(SQToken *token))result;
 
 @end

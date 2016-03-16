@@ -17,7 +17,7 @@
                          RedirectUri:(NSString *)redirect_uri
                                Scope:(NSString *)scope;
 
-- (void)authorizeUser:(void(^)(SQAuthResult *authResult))result;
+- (void)authorizeUser:(void(^)(SQToken *token))tokenResult;
 
 - (void)postForNewTokenWithRefreshToken:(SQToken *)token
                               onSuccess:(void(^)(SQToken *updatedToken))success
@@ -31,6 +31,10 @@
                       onSuccess:(void(^)(NSArray *ownFilesList))success
                       onFailure:(void(^)(NSError *error))failure;
 
+- (void)getForFilesWithToken:(SQToken *)token
+                   onSuccess:(void (^)(NSArray *))success
+                   onFailure:(void (^)(NSError *))failure;
+    
 - (void)startActivityIndicatorWithTitle:(NSString *)title;
 
 - (void)stopActivityIndicator;

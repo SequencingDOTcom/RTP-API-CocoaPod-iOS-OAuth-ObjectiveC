@@ -12,6 +12,5 @@
 + (instancetype)sharedInstance;    // designated initializer
 
 @property (readwrite, strong, nonatomic) SQToken *token;
-@property (readwrite, nonatomic) BOOL isAuthorized;
 
 @end

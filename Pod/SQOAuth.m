@@ -34,24 +34,16 @@
                                                            Scope:scope];
 }
 
-- (void)authorizeUser:(void (^)(SQAuthResult *))result {
-    [[SQServerManager sharedInstance] authorizeUser:^(SQAuthResult *authResult) {
-        if ([authResult isAuthorized]) {
-            result([SQAuthResult sharedInstance]);
+- (void)authorizeUser {
+    [[SQServerManager sharedInstance] authorizeUser:^(SQToken *token) {
+        if (token) {
+            [self.authorizationDelegate userIsSuccessfullyAuthorized:token];
+            
         } else {
-            result(nil);
+            [self.authorizationDelegate userIsNotAuthorized];
         }
     }];
 }
 
-- (void)authorizeUserAndGetToken:(void (^)(SQToken *))result {
-    [self authorizeUser:^(SQAuthResult *authResult) {
-        if ([authResult isAuthorized]) {
-            result([[SQAuthResult sharedInstance] token]);
-        } else {
-            result(nil);
-        }
-    }];
-}
 
 @end

@@ -44,12 +44,12 @@ static NSString *grant_type     = @"authorization_code";
 static NSString *refreshTokenURL    = @"https://sequencing.com/oauth2/token?q=oauth2/token";
 static NSString *refreshGrant_type  = @"refresh_token";
 
-// parameters for sample files request
+// parameters for files request
 static NSString *apiURL         = @"https://api.sequencing.com";
 static NSString *demoPath       = @"/DataSourceList?sample=true";
+static NSString *filesPath      = @"/DataSourceList?all=true";
+// static NSString *filesPath      = @"/DataSourceList?uploaded=true&shared=true&fromApps=true&allWithAltruist=true&sample=true";
 
-// parameters for own files list request
-static NSString *filesPath      = @"/DataSourceList?uploaded=true&shared=true";
 
 
 + (instancetype) sharedInstance {
@@ -61,6 +61,7 @@ static NSString *filesPath      = @"/DataSourceList?uploaded=true&shared=true";
     return manager;
 }
 
+
 - (id)init {
     self = [super init];
     if (self) {
@@ -71,6 +72,7 @@ static NSString *filesPath      = @"/DataSourceList?uploaded=true&shared=true";
     }
     return self;
 }
+
 
 - (void)registrateParametersCliendID:(NSString *)client_id
                         ClientSecret:(NSString *)client_secret
@@ -87,7 +89,7 @@ static NSString *filesPath      = @"/DataSourceList?uploaded=true&shared=true";
 #pragma mark - 
 #pragma mark Request fuctions
 
-- (void)authorizeUser:(void (^)(SQAuthResult *))completion {
+- (void)authorizeUser:(void (^)(SQToken *))tokenResult {
     NSString *randomState = [self randomStringWithLength:[self randomInt]];
     
     NSString *client_id_upd = [self.client_id stringByAddingPercentEncodingWithAllowedCharacters:NSCharacterSet.URLQueryAllowedCharacterSet];
@@ -109,9 +111,8 @@ static NSString *filesPath      = @"/DataSourceList?uploaded=true&shared=true";
             // first, must check if "state" from response matches "state" in request
             if (![[response objectForKey:@"state"] isEqualToString:randomState]) {
                 NSLog(@"state mismatch, response is being spoofed");
-                if (completion) {
-                    [[SQAuthResult sharedInstance] setIsAuthorized:NO];
-                    completion([SQAuthResult sharedInstance]);
+                if (tokenResult) {
+                    tokenResult(nil);
                 }
             } else {
                 
@@ -122,33 +123,30 @@ static NSString *filesPath      = @"/DataSourceList?uploaded=true&shared=true";
                     if (token) {
                         [self stopActivityIndicator];
                         [[SQAuthResult sharedInstance] setToken:token];
-                        [[SQAuthResult sharedInstance] setIsAuthorized:YES];
                         [[SQTokenUpdater sharedInstance] cancelTimer];
                         // THIS WILL START TIMER TO AUTOMATICALLY REFRESH ACCESS_TOKEN WHEN IT'S EXPIRED
                         [[SQTokenUpdater sharedInstance] startTimer];
-                        completion([SQAuthResult sharedInstance]);
+                        tokenResult(token);
                     } else {
-                        if (completion) {
+                        if (tokenResult) {
                             [self stopActivityIndicator];
-                            [[SQAuthResult sharedInstance] setIsAuthorized:NO];
-                            completion([SQAuthResult sharedInstance]);
+                            tokenResult(nil);
                         }
                     }
                 } onFailure:^(NSError *error) {
                     NSLog(@"error = %@", [error localizedDescription]);
-                    if (completion) {
+                    if (tokenResult) {
                         [self stopActivityIndicator];
-                        [[SQAuthResult sharedInstance] setIsAuthorized:NO];
-                        completion([SQAuthResult sharedInstance]);
+                        tokenResult(nil);
                     }
                 }];
             }
-        } else if (completion) {
+        } else if (tokenResult) {
             [self stopActivityIndicator];
-            [[SQAuthResult sharedInstance] setIsAuthorized:NO];
-            completion([SQAuthResult sharedInstance]);
+            tokenResult(nil);
         }
     }];
+    
     UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:loginViewController];
     UIViewController *mainVC = [[[[UIApplication sharedApplication] windows] firstObject] rootViewController];
     [mainVC presentViewController:nav
@@ -201,6 +199,7 @@ static NSString *filesPath      = @"/DataSourceList?uploaded=true&shared=true";
     }];
 }
 
+
 - (void)postForNewTokenWithRefreshToken:(SQToken *)token
                               onSuccess:(void(^)(SQToken *updatedToken))success
                               onFailure:(void(^)(NSError *error))failure {
@@ -243,6 +242,7 @@ static NSString *filesPath      = @"/DataSourceList?uploaded=true&shared=true";
                             }];
 }
 
+
 - (void)getForSampleFilesWithToken:(SQToken *)token
                       onSuccess:(void(^)(NSArray *))success
                       onFailure:(void(^)(NSError *))failure {
@@ -277,6 +277,7 @@ static NSString *filesPath      = @"/DataSourceList?uploaded=true&shared=true";
                                 }
                             }];
 }
+
 
 - (void)getForOwnFilesWithToken:(SQToken *)token
                       onSuccess:(void (^)(NSArray *))success
@@ -314,6 +315,42 @@ static NSString *filesPath      = @"/DataSourceList?uploaded=true&shared=true";
 }
 
 
+- (void)getForFilesWithToken:(SQToken *)token
+                   onSuccess:(void (^)(NSArray *))success
+                   onFailure:(void (^)(NSError *))failure {
+    NSString *apiUrlForFiles = [[NSString alloc] initWithFormat:@"%@%@", apiURL, filesPath];
+    [SQHttpHelper execHttpRequestWithUrl:apiUrlForFiles
+                               andMethod:@"GET"
+                              andHeaders:nil
+                             andUsername:nil
+                             andPassword:nil
+                                andToken:token.accessToken
+                            andAuthScope:@"Bearer"
+                           andParameters:nil
+                              andHandler:^(NSString* responseText, NSURLResponse* response, NSError* error) {
+                                  if (response) {
+                                      NSError *jsonError;
+                                      NSData *jsonData = [responseText dataUsingEncoding:NSUTF8StringEncoding];
+                                      NSArray *parsedObject = [NSJSONSerialization JSONObjectWithData:jsonData
+                                                                                              options:0
+                                                                                                error:&jsonError];
+                                      if (jsonError != nil) {
+                                          NSLog(@"Error: %@", jsonError);
+                                          if (success) {
+                                              success(nil);
+                                          }
+                                      } else {
+                                          if (success) {
+                                              success(parsedObject);
+                                          }
+                                      }
+                                  } else if (failure) {
+                                      failure(error);
+                                  }
+                              }];
+}
+
+
 #pragma mark -
 #pragma mark Request helpers
 
@@ -321,11 +358,12 @@ static NSString *filesPath      = @"/DataSourceList?uploaded=true&shared=true";
     return arc4random_uniform(100);
 }
 
+
 - (NSString *)randomStringWithLength:(int)len {
     NSString *letters = @"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     NSMutableString *randomString = [NSMutableString stringWithCapacity: len];
     for (int i = 0; i < len; i++) {
-        [randomString appendFormat: @"%C", [letters characterAtIndex: (NSUInteger) arc4random_uniform((u_int32_t)[letters length])]];
+        [randomString appendFormat: @"%C", [letters characterAtIndex: (NSUInteger)arc4random_uniform((u_int32_t)[letters length])]];
     }
     return randomString;
 }

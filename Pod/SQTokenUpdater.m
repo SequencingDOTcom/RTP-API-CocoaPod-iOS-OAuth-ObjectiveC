@@ -7,6 +7,7 @@
 #import "SQAuthResult.h"
 #import "SQServerManager.h"
 #import "SQToken.h"
+#import "SQOAuth.h"
 
 dispatch_source_t CreateDispatchTimer(double interval, dispatch_queue_t queue, dispatch_block_t block)
 {
@@ -73,11 +74,14 @@ static double SECONDS_TO_FIRE = 300.000f; // time interval lengh in seconds, in 
         if (updatedToken) {
             // [self printToken:[[AuthResult sharedInstance] token] AndActivity:@"oldToken:"];
             // [self printToken:updatedToken AndActivity:@"refreshedToken:"];
-
+            
+            // store update token in SQAuthResult instance
             [[SQAuthResult sharedInstance] setToken:updatedToken];
             
+            // pass on the updated token to the user
+            [[[SQOAuth sharedInstance] refreshTokenDelegate] tokenIsRefreshed:updatedToken];
+            
             // [self printToken:[[AuthResult sharedInstance] token] AndActivity:@"oldUpdatedToken:"];
-            // NSLog(@"\n\n");
         }
     } onFailure:^(NSError *error) {
         NSLog(@"%@", [error localizedDescription]);
