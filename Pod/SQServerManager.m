@@ -376,11 +376,12 @@ static NSString *filesPath      = @"/DataSourceList?all=true";
     dispatch_async(kMainQueue, ^{
         self.strLabel = [[UILabel alloc] initWithFrame:CGRectMake(50, 0, 150, 50)];
         self.strLabel.text = title;
+        // self.strLabel.font = [UIFont systemFontOfSize:15.f];
         self.strLabel.textColor = [UIColor grayColor];
         
         CGFloat xPos = self.mainVC.view.frame.size.width / 2 - 100;
-        CGFloat yPos = self.mainVC.view.frame.size.height / 2 - 25;
-        self.messageFrame = [[UIView alloc] initWithFrame:CGRectMake(xPos, yPos, 250, 40)];
+        CGFloat yPos = self.mainVC.view.frame.size.height / 2 + 30;
+        self.messageFrame = [[UIView alloc] initWithFrame:CGRectMake(xPos, yPos, 250, 50)];
         self.messageFrame.layer.cornerRadius = 15;
         self.messageFrame.backgroundColor = [UIColor clearColor];
         
