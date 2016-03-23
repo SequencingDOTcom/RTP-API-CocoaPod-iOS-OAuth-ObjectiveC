@@ -253,8 +253,9 @@ You need to follow instruction below if you want to install and use OAuth logic 
 			NSString *refreshToken
 			```
 	
-		* in method ```tokenIsRefreshed``` you'll receive updated token with the same object model.
-			DO NOT OVERRIDE REFRESH_TOKEN PROPERTY for TOKEN object - it comes as null after refresh token request
+		* in method ```tokenIsRefreshed``` you'll receive updated token with the same object model
+		
+			DO NOT OVERRIDE ```refresh_token``` property for ```token``` object - it comes as ```nil``` after refresh token request
 	
 		* for your extra needs you can always get access directly to the up-to-day token object which is stored in ```SQAuthResult``` class via ```token``` property
 			```
