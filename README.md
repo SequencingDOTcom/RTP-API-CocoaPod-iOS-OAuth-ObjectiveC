@@ -48,7 +48,10 @@ You need to follow instruction below if you want to install and use OAuth logic 
 			
 		* register these parameters into OAuth module instance
 			```
-			[[SQOAuth sharedInstance] registrateApplicationParametersCliendID:CLIENT_ID ClientSecret:CLIENT_SECRET RedirectUri:REDIRECT_URI Scope:SCOPE];
+			[[SQOAuth sharedInstance] registrateApplicationParametersCliendID:CLIENT_ID 
+										ClientSecret:CLIENT_SECRET 
+										RedirectUri:REDIRECT_URI 
+										Scope:SCOPE];
 			```
 		
 		* add import for protocol
