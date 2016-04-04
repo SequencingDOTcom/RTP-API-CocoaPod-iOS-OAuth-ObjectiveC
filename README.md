@@ -87,9 +87,9 @@ CocoaPod integration
 
 You need to follow instruction below if you want to install and use OAuth logic and file selector logic in your existed or new project.
 
-* create a new project in Xcode
+* **Create a new project in Xcode**
 
-* install pod
+* **Install pod**
 	* see [CocoaPods guides](https://guides.cocoapods.org/using/using-cocoapods.html)
 	* create Podfile in your project directory: ```$ pod init```
     * specify "sequencing-oauth-api-objc" pod parameters in Podfile:
@@ -99,7 +99,7 @@ You need to follow instruction below if you want to install and use OAuth logic 
 	* install the dependency in your project: ```$ pod install```
 	* always open the Xcode workspace instead of the project file: ```$ open *.xcworkspace```
 
-* add Application Transport Security setting
+* **Add Application Transport Security setting**
 	* open project settings > Info tab
 	* add ```App Transport Security Settings``` row parameter (as Dictionary)
 	* add subrow to App Transport Security Settings parameter as ```Exception Domains``` dictionary parameter
@@ -110,10 +110,10 @@ You need to follow instruction below if you want to install and use OAuth logic 
 	![sample files](https://github.com/SequencingDOTcom/CocoaPod-iOS-OAuth-ObjectiveC/blob/master/Screenshots/authTransportSecuritySetting.png)
 	
 	
-* use authorization method(s)
-	* create View Controllers, e.g. for Login screen and for Start screen
+* **Use authorization method**
+	* **create View Controllers, e.g. for Login screen and for Start screen**
 	
-	* in your LoginViewController class:
+	* **in your LoginViewController class:**
 	
 		* add imports
 			```
@@ -232,7 +232,7 @@ You need to follow instruction below if you want to install and use OAuth logic 
 			}
 			```
 		
-	* in your StartViewController class:
+	* **in your StartViewController class:**
 		
 		* add imports
 			```
