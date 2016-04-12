@@ -125,7 +125,9 @@
     NSData *responseData = [NSURLConnection sendSynchronousRequest:request
                                                  returningResponse:&response
                                                              error:&error];
-    [self.activityIndicator stopAnimating];
+    if (responseData) {
+        [self.activityIndicator stopAnimating];
+    }
     
     // NSLog(@"\nresponse \n\t-> %@", response);
     // NSLog(@"\nresponse. statusCode \n\t-> %ld", [response statusCode]);
