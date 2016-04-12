@@ -135,7 +135,7 @@
          [response statusCode] != 301 &&
          [response statusCode] != 302) || error)
     {
-        NSLog(@"status code: %ld", [response statusCode]);
+        NSLog(@"status code: %ld", (long)[response statusCode]);
         // handle error condition
         return NO;
         
