@@ -94,10 +94,10 @@
             self.completionBlock([[SQRequestHelper sharedInstance] parseRequest:navigationAction.request]);
         }
         [self dismissViewControllerAnimated:YES completion:nil];
-        decisionHandler(WKNavigationResponsePolicyCancel);
+        decisionHandler(WKNavigationActionPolicyCancel);
         
     } else {
-        decisionHandler(WKNavigationResponsePolicyAllow);
+        decisionHandler(WKNavigationActionPolicyAllow);
     }
 }
 
