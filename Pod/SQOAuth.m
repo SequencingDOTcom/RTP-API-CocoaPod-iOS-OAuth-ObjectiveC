@@ -45,13 +45,28 @@
             [self.authorizationDelegate userIsSuccessfullyAuthorized:token];
             
         } else if (didCancel) {
-            if ([self.authorizationDelegate respondsToSelector:@selector(userDidCancelAuthorization)]) {
+            if ([self.authorizationDelegate respondsToSelector:@selector(userDidCancelAuthorization)])
                 [self.authorizationDelegate userDidCancelAuthorization];
-            }
             
         } else if (error) {
             [self.authorizationDelegate userIsNotAuthorized];
             
+        }
+    }];
+}
+
+
+- (void)registrateUser {
+    [[SQServerManager sharedInstance] registrateUser:^(BOOL success, BOOL didCancel, BOOL error) {
+        if (success) {
+            [self.registrationDelegate userIsSuccessfullyRegistered];
+            
+        } else if (didCancel) {
+            if ([self.registrationDelegate respondsToSelector:@selector(userDidCancelRegistration)])
+                [self.registrationDelegate userDidCancelRegistration];
+            
+        } else if (error) {
+            [self.registrationDelegate userIsNotRegistered];
         }
     }];
 }

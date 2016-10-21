@@ -29,6 +29,13 @@
 
 
 /*
+ *  for guest user
+ *  method to registrate new user
+ */
+- (void)registrateUser:(void(^)(BOOL success, BOOL didCancel, BOOL error))result;
+
+
+/*
  *  for authorized user
  *  shoud be used when user is authorized but token is expired
  */

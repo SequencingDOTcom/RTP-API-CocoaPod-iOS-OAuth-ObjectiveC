@@ -5,6 +5,7 @@
 
 #import "SQServerManager.h"
 #import "SQLoginWebViewController.h"
+#import "SQRegistrationWebViewController.h"
 #import "SQToken.h"
 #import "SQHttpHelper.h"
 #import "SQAuthResult.h"
@@ -12,6 +13,7 @@
 #import "SQTokenUpdater.h"
 
 #define kMainQueue dispatch_get_main_queue()
+
 
 
 @interface SQServerManager ()
@@ -29,6 +31,7 @@
 @property (readwrite, strong, nonatomic) NSString *scope;
 
 @end
+
 
 
 @implementation SQServerManager
@@ -51,6 +54,10 @@ static NSString *apiURL         = @"https://api.sequencing.com";
 static NSString *demoPath       = @"/DataSourceList?sample=true";
 static NSString *filesPath      = @"/DataSourceList?all=true";
 // static NSString *filesPath      = @"/DataSourceList?uploaded=true&shared=true&fromApps=true&allWithAltruist=true&sample=true";
+
+// parameters for user registration
+static NSString *registrationURL = @"https://sequencing.com/user/register/";
+
 
 
 #pragma mark -
@@ -80,7 +87,7 @@ static NSString *filesPath      = @"/DataSourceList?all=true";
 
 
 #pragma mark -
-#pragma mark for Guest user. Authorization
+#pragma mark Authorization
 
 - (void)authorizeUser:(void (^)(SQToken *token, BOOL didCancel, BOOL error))result {
     NSString *randomState = [self randomStringWithLength:[self randomInt]];
@@ -99,7 +106,7 @@ static NSString *filesPath      = @"/DataSourceList?all=true";
     
     // ===== authorizing user request =====
     
-    SQLoginWebViewController *loginWebViewController = \
+    SQLoginWebViewController *loginWebViewController = 
     [[SQLoginWebViewController alloc] initWithURL:url andCompletionBlock:^(NSMutableDictionary *response) {
         NSLog(@"%@", response);
         
@@ -159,6 +166,25 @@ static NSString *filesPath      = @"/DataSourceList?all=true";
 }
 
 
+
+#pragma mark -
+#pragma mark User Registration
+
+- (void)registrateUser:(void(^)(BOOL success, BOOL didCancel, BOOL error))result {
+    NSURL *url = [NSURL URLWithString:@"https://sequencing.com/user/register/"];
+    
+    SQRegistrationWebViewController *registrationWebViewController =
+    [[SQRegistrationWebViewController alloc] initWithURL:url
+                                      andCompletionBlock:^(NSMutableDictionary *response) {
+                                          NSLog(@"%@", response);
+                                      }];
+}
+
+
+
+#pragma mark -
+#pragma mark Token methods
+
 - (void)postForTokenWithCode:(NSString *)code
                    onSuccess:(void(^)(SQToken *token))success
                    onFailure:(void(^)(NSError *error))failure {
@@ -204,9 +230,6 @@ static NSString *filesPath      = @"/DataSourceList?all=true";
 }
 
 
-
-#pragma mark -
-#pragma mark for Authorized user. Token methods
 
 - (void)withRefreshToken:(SQToken *)refreshToken
        updateAccessToken:(void(^)(SQToken *token))refreshedToken {
@@ -329,7 +352,7 @@ static NSString *filesPath      = @"/DataSourceList?all=true";
         UIViewController *rootVC1 = [[[[UIApplication sharedApplication] windows] firstObject] rootViewController];
         
         if ([rootVC1 isKindOfClass:[UINavigationController class]]) {
-            UINavigationController *navVC = (UINavigationController *)rootVC1;
+            UINavigationController *navVC = rootVC1;
             topmostVC = [navVC viewControllers][0];
             self.mainVC = topmostVC;
         } else {
@@ -365,125 +388,7 @@ static NSString *filesPath      = @"/DataSourceList?all=true";
 }
 
 
-/*
-#pragma mark -
-#pragma mark for Authorized user. Load Files
 
-- (void)getForFilesWithToken:(SQToken *)token
-                   onSuccess:(void (^)(NSArray *))success
-                   onFailure:(void (^)(NSError *))failure {
-    
-    NSString *apiUrlForFiles = [[NSString alloc] initWithFormat:@"%@%@", apiURL, filesPath];
-    
-    [SQHttpHelper execHttpRequestWithUrl:apiUrlForFiles
-                               andMethod:@"GET"
-                              andHeaders:nil
-                             andUsername:nil
-                             andPassword:nil
-                                andToken:token.accessToken
-                            andAuthScope:@"Bearer"
-                           andParameters:nil
-                              andHandler:^(NSString* responseText, NSURLResponse* response, NSError* error) {
-                                  
-                                  if (response) {
-                                      NSError *jsonError;
-                                      NSData *jsonData = [responseText dataUsingEncoding:NSUTF8StringEncoding];
-                                      NSArray *parsedObject = [NSJSONSerialization JSONObjectWithData:jsonData
-                                                                                              options:0
-                                                                                                error:&jsonError];
-                                      if (jsonError != nil) {
-                                          NSLog(@"Error: %@", jsonError);
-                                          if (success) {
-                                              success(nil);
-                                          }
-                                      } else {
-                                          if (success) {
-                                              success(parsedObject);
-                                          }
-                                      }
-                                  } else if (failure) {
-                                      failure(error);
-                                  }
-                              }];
-}*/
-
-/*
-- (void)getForSampleFilesWithToken:(SQToken *)token
-                         onSuccess:(void(^)(NSArray *))success
-                         onFailure:(void(^)(NSError *))failure {
-    
-    NSString *apiUrlForDemo = [[NSString alloc] initWithFormat:@"%@%@", apiURL, demoPath];
-    
-    [SQHttpHelper execHttpRequestWithUrl:apiUrlForDemo
-                               andMethod:@"GET"
-                              andHeaders:nil
-                             andUsername:nil
-                             andPassword:nil
-                                andToken:token.accessToken
-                            andAuthScope:@"Bearer"
-                           andParameters:nil
-                              andHandler:^(NSString* responseText, NSURLResponse* response, NSError* error) {
-                                  
-                                  if (response) {
-                                      NSError *jsonError;
-                                      NSData *jsonData = [responseText dataUsingEncoding:NSUTF8StringEncoding];
-                                      NSArray *parsedObject = [NSJSONSerialization JSONObjectWithData:jsonData
-                                                                                              options:0
-                                                                                                error:&jsonError];
-                                      if (jsonError != nil) {
-                                          NSLog(@"Error: %@", jsonError);
-                                          if (success) {
-                                              success(nil);
-                                          }
-                                      } else {
-                                          if (success) {
-                                              success(parsedObject);
-                                          }
-                                      }
-                                  } else if (failure) {
-                                      failure(error);
-                                  }
-                              }];
-}*/
-
-/*
-- (void)getForOwnFilesWithToken:(SQToken *)token
-                      onSuccess:(void (^)(NSArray *))success
-                      onFailure:(void (^)(NSError *))failure {
-    
-    NSString *apiUrlForFiles = [[NSString alloc] initWithFormat:@"%@%@", apiURL, filesPath];
-    
-    [SQHttpHelper execHttpRequestWithUrl:apiUrlForFiles
-                               andMethod:@"GET"
-                              andHeaders:nil
-                             andUsername:nil
-                             andPassword:nil
-                                andToken:token.accessToken
-                            andAuthScope:@"Bearer"
-                           andParameters:nil
-                              andHandler:^(NSString* responseText, NSURLResponse* response, NSError* error) {
-                                  
-                                  if (response) {
-                                      NSError *jsonError;
-                                      NSData *jsonData = [responseText dataUsingEncoding:NSUTF8StringEncoding];
-                                      NSArray *parsedObject = [NSJSONSerialization JSONObjectWithData:jsonData
-                                                                                              options:0
-                                                                                                error:&jsonError];
-                                      if (jsonError != nil) {
-                                          NSLog(@"Error: %@", jsonError);
-                                          if (success) {
-                                              success(nil);
-                                          }
-                                      } else {
-                                          if (success) {
-                                              success(parsedObject);
-                                          }
-                                      }
-                                  } else if (failure) {
-                                      failure(error);
-                                  }
-                              }];
-}*/
 
 
 
