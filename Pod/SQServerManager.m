@@ -178,6 +178,10 @@ static NSString *registrationURL = @"https://sequencing.com/user/register/";
                                       andCompletionBlock:^(NSMutableDictionary *response) {
                                           NSLog(@"%@", response);
                                       }];
+    
+    UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:registrationWebViewController];
+    UIViewController *mainVC = [[[[UIApplication sharedApplication] windows] firstObject] rootViewController];
+    [mainVC presentViewController:nav animated:YES completion:nil];
 }
 
 

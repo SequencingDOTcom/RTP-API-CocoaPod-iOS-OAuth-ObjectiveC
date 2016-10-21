@@ -103,7 +103,7 @@
     
     NSLog(@"response: %@", navigationResponse.response);
     
-    NSHTTPURLResponse *response = navigationResponse.response;
+    NSHTTPURLResponse *response = (NSHTTPURLResponse *)navigationResponse.response;
     NSURL *url = [response URL];
     NSString *urlString = [url absoluteString];
     
@@ -115,7 +115,7 @@
             statusCode == 301 ||
             statusCode == 302) {
             
-            decisionHandler(WKNavigationActionPolicyAllow);
+            decisionHandler(WKNavigationResponsePolicyAllow);
             
         } else {
             [self.activityIndicator stopAnimating];
@@ -124,11 +124,11 @@
             [result setObject:[NSNumber numberWithBool:YES] forKey:@"error"];
             self.completionBlock(result);
             [self dismissViewControllerAnimated:YES completion:nil];
-            decisionHandler(WKNavigationActionPolicyCancel);
+            decisionHandler(WKNavigationResponsePolicyCancel);
         }
         
     } else {
-        decisionHandler(WKNavigationActionPolicyAllow);
+        decisionHandler(WKNavigationResponsePolicyAllow);
     }
 }
 

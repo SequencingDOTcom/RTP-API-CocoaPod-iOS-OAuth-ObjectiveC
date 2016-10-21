@@ -5,13 +5,16 @@
 
 #import <Foundation/Foundation.h>
 
+
 @interface SQRequestHelper : NSObject
 
 + (instancetype)sharedInstance;
     
 - (void)rememberRedirectUri:(NSString *)redirect_uri;
+- (void)rememberRegistrationRedirectUri:(NSString *)redirect_uri;
 
 - (BOOL)verifyRequestForRedirectBack:(NSURLRequest *)request;
+- (BOOL)verifyRegistrationRequestForRedirectBack:(NSURLRequest *)request;
 
 - (NSMutableDictionary *)parseRequest:(NSURLRequest *)request;
 

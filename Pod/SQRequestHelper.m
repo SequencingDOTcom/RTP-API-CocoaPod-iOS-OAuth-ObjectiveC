@@ -8,6 +8,7 @@
 @interface SQRequestHelper ()
 
 @property (strong, nonatomic) NSString *redirect_uri;
+@property (strong, nonatomic) NSString *registrationRedirect_uri;
 
 @end
 
@@ -22,16 +23,31 @@
     return instance;
 }
 
+
 - (void)rememberRedirectUri:(NSString *)redirect_uri {
     self.redirect_uri = redirect_uri;
 }
 
+- (void)rememberRegistrationRedirectUri:(NSString *)redirect_uri {
+    self.registrationRedirect_uri = redirect_uri;
+}
+
+
 - (BOOL)verifyRequestForRedirectBack:(NSURLRequest *)request {
     if ([[NSString stringWithFormat:@"%@", [request URL]] containsString:[NSString stringWithFormat:@"%@?", self.redirect_uri]]) {
+         return YES;
+    }
+    return NO;
+}
+
+
+- (BOOL)verifyRegistrationRequestForRedirectBack:(NSURLRequest *)request {
+    if ([[NSString stringWithFormat:@"%@", [request URL]] containsString:[NSString stringWithFormat:@"%@?", self.registrationRedirect_uri]]) {
         return YES;
     }
     return NO;
 }
+
 
 - (NSMutableDictionary *)parseRequest:(NSURLRequest *)request {
     NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
