@@ -35,7 +35,7 @@
 
 - (BOOL)verifyRequestForRedirectBack:(NSURLRequest *)request {
     if ([[NSString stringWithFormat:@"%@", [request URL]] containsString:[NSString stringWithFormat:@"%@?", self.redirect_uri]]) {
-         return YES;
+        return YES;
     }
     return NO;
 }

@@ -356,7 +356,7 @@ static NSString *registrationURL = @"https://sequencing.com/user/register/";
         UIViewController *rootVC1 = [[[[UIApplication sharedApplication] windows] firstObject] rootViewController];
         
         if ([rootVC1 isKindOfClass:[UINavigationController class]]) {
-            UINavigationController *navVC = rootVC1;
+            UINavigationController *navVC = (UINavigationController *)rootVC1;
             topmostVC = [navVC viewControllers][0];
             self.mainVC = topmostVC;
         } else {
