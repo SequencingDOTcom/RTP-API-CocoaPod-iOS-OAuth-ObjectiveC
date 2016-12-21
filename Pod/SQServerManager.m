@@ -422,7 +422,6 @@ static NSString *filesPath      = @"/DataSourceList?all=true";
             
         } else if ((int)statusCode == 1) { // error
             if ([[parsedObject allKeys] containsObject:@"errorCode"]) {
-                NSString *errorMessage1 = [NSString stringWithFormat:@"errorCode: %d", [parsedObject objectForKey:@"errorCode"]];
                 
                 if ([[parsedObject allKeys] containsObject:@"errorMessage"]) {
                     id responseErrorMessage = [parsedObject objectForKey:@"errorMessage"];
