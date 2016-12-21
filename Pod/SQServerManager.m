@@ -5,7 +5,6 @@
 
 #import "SQServerManager.h"
 #import "SQLoginWebViewController.h"
-#import "SQRegistrationWebViewController.h"
 #import "SQToken.h"
 #import "SQHttpHelper.h"
 #import "SQAuthResult.h"
@@ -13,7 +12,6 @@
 #import "SQTokenUpdater.h"
 
 #define kMainQueue dispatch_get_main_queue()
-
 
 
 @interface SQServerManager ()
@@ -31,7 +29,6 @@
 @property (readwrite, strong, nonatomic) NSString *scope;
 
 @end
-
 
 
 @implementation SQServerManager
@@ -55,8 +52,11 @@ static NSString *demoPath       = @"/DataSourceList?sample=true";
 static NSString *filesPath      = @"/DataSourceList?all=true";
 // static NSString *filesPath      = @"/DataSourceList?uploaded=true&shared=true&fromApps=true&allWithAltruist=true&sample=true";
 
-// parameters for user registration
-static NSString *registrationURL = @"https://sequencing.com/user/register/";
+// registrate new account endpoint
+#define kRegisterNewAccountEndpoint @"https://sequencing.com/indexApi.php?q=sequencing/public/webservice/user/seq_register.json"
+
+// peset password endpoint
+#define kResetPasswordEndpoint      @"https://sequencing.com/indexApi.php?q=sequencing/public/webservice/user/seq_new_pass.json"
 
 
 
@@ -87,12 +87,13 @@ static NSString *registrationURL = @"https://sequencing.com/user/register/";
 
 
 #pragma mark -
-#pragma mark Authorization
+#pragma mark for Guest user. Authorization
 
 - (void)authorizeUser:(void (^)(SQToken *token, BOOL didCancel, BOOL error))result {
     NSString *randomState = [self randomStringWithLength:[self randomInt]];
     
     NSString *client_id_upd = [self.client_id stringByAddingPercentEncodingWithAllowedCharacters:NSCharacterSet.URLQueryAllowedCharacterSet];
+    
     NSString *urlString = [NSString stringWithFormat:
                            @"%@?"
                            "redirect_uri=%@&"
@@ -102,11 +103,12 @@ static NSString *registrationURL = @"https://sequencing.com/user/register/";
                            "scope=%@&"
                            "%@",
                            authURL, self.redirect_uri, response_type, randomState, client_id_upd, self.scope, mobileParam];
+    
     NSURL *url = [NSURL URLWithString:urlString];
     
     // ===== authorizing user request =====
     
-    SQLoginWebViewController *loginWebViewController = 
+    SQLoginWebViewController *loginWebViewController =
     [[SQLoginWebViewController alloc] initWithURL:url andCompletionBlock:^(NSMutableDictionary *response) {
         NSLog(@"%@", response);
         
@@ -166,29 +168,6 @@ static NSString *registrationURL = @"https://sequencing.com/user/register/";
 }
 
 
-
-#pragma mark -
-#pragma mark User Registration
-
-- (void)registrateUser:(void(^)(BOOL success, BOOL didCancel, BOOL error))result {
-    NSURL *url = [NSURL URLWithString:@"https://sequencing.com/user/register/"];
-    
-    SQRegistrationWebViewController *registrationWebViewController =
-    [[SQRegistrationWebViewController alloc] initWithURL:url
-                                      andCompletionBlock:^(NSMutableDictionary *response) {
-                                          NSLog(@"%@", response);
-                                      }];
-    
-    UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:registrationWebViewController];
-    UIViewController *mainVC = [[[[UIApplication sharedApplication] windows] firstObject] rootViewController];
-    [mainVC presentViewController:nav animated:YES completion:nil];
-}
-
-
-
-#pragma mark -
-#pragma mark Token methods
-
 - (void)postForTokenWithCode:(NSString *)code
                    onSuccess:(void(^)(SQToken *token))success
                    onFailure:(void(^)(NSError *error))failure {
@@ -234,6 +213,9 @@ static NSString *registrationURL = @"https://sequencing.com/user/register/";
 }
 
 
+
+#pragma mark -
+#pragma mark for Authorized user. Token methods
 
 - (void)withRefreshToken:(SQToken *)refreshToken
        updateAccessToken:(void(^)(SQToken *token))refreshedToken {
@@ -323,6 +305,154 @@ static NSString *registrationURL = @"https://sequencing.com/user/register/";
 
 
 
+#pragma mark -
+#pragma mark Registrate new account
+
+- (void)registrateAccountForEmailAddress:(NSString *)emailAddress withResult:(void(^)(NSString *error))result {
+    NSString *urlString = kRegisterNewAccountEndpoint;
+    NSString *urlEncoded = [urlString stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
+    
+    NSDictionary *parameters = [NSDictionary dictionaryWithObjectsAndKeys:
+                                self.client_secret, @"client_id",
+                                emailAddress, @"email", nil];
+    
+    [SQHttpHelper execPostHttpRequestWithUrl:urlEncoded
+                                  parameters:parameters
+                                  andHandler:^(NSString *responseText, NSURLResponse *response, NSError *error) {
+                                      
+                                      NSLog(@"\nresponseText: %@", responseText);
+                                      NSLog(@"\nresponse: %@", response);
+                                      NSLog(@"\nerror: %@", error.localizedDescription);
+                                      
+                                      NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
+                                      NSInteger statusCode = [httpResponse statusCode];
+                                      
+                                      if (error) {  // server connection error
+                                          NSLog(@"\nerror: %@", error.localizedDescription);
+                                          result(error.localizedDescription);
+                                          
+                                      } else {
+                                          if (statusCode == 200 || statusCode == 301 || statusCode == 302) {
+                                              NSData *data = [responseText dataUsingEncoding:NSUTF8StringEncoding];
+                                              if (data && [responseText length] != 0) { // some response is present
+                                                  
+                                                  NSError *jsonError;
+                                                  NSData  *jsonData = data;
+                                                  NSDictionary *parsedObject = [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:&jsonError];
+                                                  
+                                                  if (jsonError) { // error with invalid json
+                                                      result(@"Server error, json response in invalid");
+                                                      
+                                                  } else {
+                                                      result([self validateRegistrationResetPasswordResponse:parsedObject]);
+                                                  }
+                                              } else {
+                                                  result(@"Server error, server response is empty");
+                                              }
+                                          } else {
+                                              result([NSString stringWithFormat:@"Server error, http status code: %zd", statusCode]);
+                                          }
+                                      }
+                                  }];
+}
+
+
+
+#pragma mark -
+#pragma mark Reset password
+
+- (void)resetPasswordForEmailAddress:(NSString *)emailAddress withResult:(void(^)(NSString *error))result {
+    NSString *urlString = kResetPasswordEndpoint;
+    NSString *urlEncoded = [urlString stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
+    
+    NSDictionary *parameters = [NSDictionary dictionaryWithObjectsAndKeys:
+                                self.client_secret, @"client_id",
+                                emailAddress, @"email", nil];
+    
+    [SQHttpHelper execPostHttpRequestWithUrl:urlEncoded
+                                  parameters:parameters
+                                  andHandler:^(NSString *responseText, NSURLResponse *response, NSError *error) {
+                                      
+                                      NSLog(@"\nresponseText: %@", responseText);
+                                      NSLog(@"\nresponse: %@", response);
+                                      NSLog(@"\nerror: %@", error.localizedDescription);
+                                      
+                                      NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
+                                      NSInteger statusCode = [httpResponse statusCode];
+                                      
+                                      if (error) {  // server connection error
+                                          NSLog(@"\nerror: %@", error.localizedDescription);
+                                          result(error.localizedDescription);
+                                          
+                                      } else {
+                                          if (statusCode == 200 || statusCode == 301 || statusCode == 302) {
+                                              NSData *data = [responseText dataUsingEncoding:NSUTF8StringEncoding];
+                                              if (data && [responseText length] != 0) { // some response is present
+                                                  
+                                                  NSError *jsonError;
+                                                  NSData  *jsonData = data;
+                                                  NSDictionary *parsedObject = [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:&jsonError];
+                                                  
+                                                  if (jsonError) { // error with invalid json
+                                                      result(@"Server error, json response in invalid");
+                                                      
+                                                  } else {
+                                                      result([self validateRegistrationResetPasswordResponse:parsedObject]);
+                                                  }
+                                              } else {
+                                                  result(@"Server error, server response is empty");
+                                              }
+                                          } else {
+                                              result([NSString stringWithFormat:@"Server error, http status code: %zd", statusCode]);
+                                          }
+                                      }
+                                  }];
+}
+
+
+
+- (NSString *)validateRegistrationResetPasswordResponse:(NSDictionary *)parsedObject {
+    NSString *validationResult;
+    
+    if ([[parsedObject allKeys] containsObject:@"status"]) {
+        id statusCode = [parsedObject objectForKey:@"status"];
+        
+        if ((int)statusCode == 0) { // success, no errors
+            validationResult = nil;
+            
+        } else if ((int)statusCode == 1) { // error
+            if ([[parsedObject allKeys] containsObject:@"errorCode"]) {
+                NSString *errorMessage1 = [NSString stringWithFormat:@"errorCode: %d", [parsedObject objectForKey:@"errorCode"]];
+                
+                if ([[parsedObject allKeys] containsObject:@"errorMessage"]) {
+                    id responseErrorMessage = [parsedObject objectForKey:@"errorMessage"];
+                    
+                    if ([responseErrorMessage isKindOfClass:[NSString class]]) {
+                        validationResult = (NSString *)responseErrorMessage;
+                        
+                    } else if ([responseErrorMessage isKindOfClass:[NSDictionary class]]) {
+                        validationResult = [NSString stringWithFormat:@"%@", (NSDictionary *)responseErrorMessage];
+                        
+                    } else {
+                        validationResult = [NSString stringWithFormat:@"%@", responseErrorMessage];
+                    }
+                } else {
+                    validationResult = [NSString stringWithFormat:@"Server error, error status code: %d", (int)[parsedObject objectForKey:@"errorCode"]];
+                }
+            } else {
+                validationResult = @"Server error, unknown error status code";
+            }
+        } else {
+            validationResult = @"Server error, server response is invalid";
+        }
+    } else {
+        validationResult = @"Server error, server response is invalid";
+    }
+    
+    return validationResult;
+}
+
+
 
 #pragma mark -
 #pragma mark Request helpers
@@ -392,7 +522,125 @@ static NSString *registrationURL = @"https://sequencing.com/user/register/";
 }
 
 
+/*
+#pragma mark -
+#pragma mark for Authorized user. Load Files
 
+- (void)getForFilesWithToken:(SQToken *)token
+                   onSuccess:(void (^)(NSArray *))success
+                   onFailure:(void (^)(NSError *))failure {
+    
+    NSString *apiUrlForFiles = [[NSString alloc] initWithFormat:@"%@%@", apiURL, filesPath];
+    
+    [SQHttpHelper execHttpRequestWithUrl:apiUrlForFiles
+                               andMethod:@"GET"
+                              andHeaders:nil
+                             andUsername:nil
+                             andPassword:nil
+                                andToken:token.accessToken
+                            andAuthScope:@"Bearer"
+                           andParameters:nil
+                              andHandler:^(NSString* responseText, NSURLResponse* response, NSError* error) {
+                                  
+                                  if (response) {
+                                      NSError *jsonError;
+                                      NSData *jsonData = [responseText dataUsingEncoding:NSUTF8StringEncoding];
+                                      NSArray *parsedObject = [NSJSONSerialization JSONObjectWithData:jsonData
+                                                                                              options:0
+                                                                                                error:&jsonError];
+                                      if (jsonError != nil) {
+                                          NSLog(@"Error: %@", jsonError);
+                                          if (success) {
+                                              success(nil);
+                                          }
+                                      } else {
+                                          if (success) {
+                                              success(parsedObject);
+                                          }
+                                      }
+                                  } else if (failure) {
+                                      failure(error);
+                                  }
+                              }];
+}*/
+
+/*
+- (void)getForSampleFilesWithToken:(SQToken *)token
+                         onSuccess:(void(^)(NSArray *))success
+                         onFailure:(void(^)(NSError *))failure {
+    
+    NSString *apiUrlForDemo = [[NSString alloc] initWithFormat:@"%@%@", apiURL, demoPath];
+    
+    [SQHttpHelper execHttpRequestWithUrl:apiUrlForDemo
+                               andMethod:@"GET"
+                              andHeaders:nil
+                             andUsername:nil
+                             andPassword:nil
+                                andToken:token.accessToken
+                            andAuthScope:@"Bearer"
+                           andParameters:nil
+                              andHandler:^(NSString* responseText, NSURLResponse* response, NSError* error) {
+                                  
+                                  if (response) {
+                                      NSError *jsonError;
+                                      NSData *jsonData = [responseText dataUsingEncoding:NSUTF8StringEncoding];
+                                      NSArray *parsedObject = [NSJSONSerialization JSONObjectWithData:jsonData
+                                                                                              options:0
+                                                                                                error:&jsonError];
+                                      if (jsonError != nil) {
+                                          NSLog(@"Error: %@", jsonError);
+                                          if (success) {
+                                              success(nil);
+                                          }
+                                      } else {
+                                          if (success) {
+                                              success(parsedObject);
+                                          }
+                                      }
+                                  } else if (failure) {
+                                      failure(error);
+                                  }
+                              }];
+}*/
+
+/*
+- (void)getForOwnFilesWithToken:(SQToken *)token
+                      onSuccess:(void (^)(NSArray *))success
+                      onFailure:(void (^)(NSError *))failure {
+    
+    NSString *apiUrlForFiles = [[NSString alloc] initWithFormat:@"%@%@", apiURL, filesPath];
+    
+    [SQHttpHelper execHttpRequestWithUrl:apiUrlForFiles
+                               andMethod:@"GET"
+                              andHeaders:nil
+                             andUsername:nil
+                             andPassword:nil
+                                andToken:token.accessToken
+                            andAuthScope:@"Bearer"
+                           andParameters:nil
+                              andHandler:^(NSString* responseText, NSURLResponse* response, NSError* error) {
+                                  
+                                  if (response) {
+                                      NSError *jsonError;
+                                      NSData *jsonData = [responseText dataUsingEncoding:NSUTF8StringEncoding];
+                                      NSArray *parsedObject = [NSJSONSerialization JSONObjectWithData:jsonData
+                                                                                              options:0
+                                                                                                error:&jsonError];
+                                      if (jsonError != nil) {
+                                          NSLog(@"Error: %@", jsonError);
+                                          if (success) {
+                                              success(nil);
+                                          }
+                                      } else {
+                                          if (success) {
+                                              success(parsedObject);
+                                          }
+                                      }
+                                  } else if (failure) {
+                                      failure(error);
+                                  }
+                              }];
+}*/
 
 
 

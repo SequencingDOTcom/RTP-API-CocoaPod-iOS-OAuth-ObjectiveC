@@ -23,14 +23,8 @@
 }
 
 
-- (void)registrateApplicationParametersCliendID:(NSString *)client_id
-                                   ClientSecret:(NSString *)client_secret
-                                    RedirectUri:(NSString *)redirect_uri
-                                          Scope:(NSString *)scope {
-    [[SQServerManager sharedInstance] registrateParametersCliendID:client_id
-                                                    ClientSecret:client_secret
-                                                     RedirectUri:redirect_uri
-                                                           Scope:scope];
+- (void)registrateApplicationParametersCliendID:(NSString *)client_id ClientSecret:(NSString *)client_secret RedirectUri:(NSString *)redirect_uri Scope:(NSString *)scope {
+    [[SQServerManager sharedInstance] registrateParametersCliendID:client_id ClientSecret:client_secret RedirectUri:redirect_uri Scope:scope];
 }
 
 
@@ -45,28 +39,13 @@
             [self.authorizationDelegate userIsSuccessfullyAuthorized:token];
             
         } else if (didCancel) {
-            if ([self.authorizationDelegate respondsToSelector:@selector(userDidCancelAuthorization)])
+            if ([self.authorizationDelegate respondsToSelector:@selector(userDidCancelAuthorization)]) {
                 [self.authorizationDelegate userDidCancelAuthorization];
+            }
             
         } else if (error) {
             [self.authorizationDelegate userIsNotAuthorized];
             
-        }
-    }];
-}
-
-
-- (void)registrateUser {
-    [[SQServerManager sharedInstance] registrateUser:^(BOOL success, BOOL didCancel, BOOL error) {
-        if (success) {
-            [self.registrationDelegate userIsSuccessfullyRegistered];
-            
-        } else if (didCancel) {
-            if ([self.registrationDelegate respondsToSelector:@selector(userDidCancelRegistration)])
-                [self.registrationDelegate userDidCancelRegistration];
-            
-        } else if (error) {
-            [self.registrationDelegate userIsNotRegistered];
         }
     }];
 }
@@ -97,6 +76,40 @@
     [[SQServerManager sharedInstance] userDidSignOut];
 }
 
+
+
+
+#pragma mark -
+#pragma mark Registrate new account
+
+- (void)registrateNewAccountForEmailAddress:(NSString *)emailAddress {
+    [[SQServerManager sharedInstance] registrateAccountForEmailAddress:emailAddress withResult:^(NSString *error) {
+        
+        if (error == nil) {
+            [self.signUpDelegate emailIsRegisteredSuccessfully];
+            
+        } else {
+            [self.signUpDelegate emailIsNotRegistered:error];
+        }
+    }];
+}
+
+
+
+#pragma mark -
+#pragma mark Reset password
+
+- (void)resetPasswordForEmailAddress:(NSString *)emailAddress {
+    [[SQServerManager sharedInstance] resetPasswordForEmailAddress:emailAddress withResult:^(NSString *error) {
+        
+        if (error == nil) {
+            [self.resetPasswordDelegate applicationForPasswordResetIsAccepted];
+            
+        } else {
+            [self.resetPasswordDelegate applicationForPasswordResetIsNotAccepted:error];
+        }
+    }];
+}
 
 
 
