@@ -321,7 +321,7 @@ static NSString *filesPath      = @"/DataSourceList?all=true";
                                   andHandler:^(NSString *responseText, NSURLResponse *response, NSError *error) {
                                       
                                       NSLog(@"\nresponseText: %@", responseText);
-                                      NSLog(@"\nresponse: %@", response);
+                                      // NSLog(@"\nresponse: %@", response);
                                       NSLog(@"\nerror: %@", error.localizedDescription);
                                       
                                       NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
@@ -374,7 +374,7 @@ static NSString *filesPath      = @"/DataSourceList?all=true";
                                   andHandler:^(NSString *responseText, NSURLResponse *response, NSError *error) {
                                       
                                       NSLog(@"\nresponseText: %@", responseText);
-                                      NSLog(@"\nresponse: %@", response);
+                                      // NSLog(@"\nresponse: %@", response);
                                       NSLog(@"\nerror: %@", error.localizedDescription);
                                       
                                       NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
@@ -412,15 +412,17 @@ static NSString *filesPath      = @"/DataSourceList?all=true";
 
 
 - (NSString *)validateRegistrationResetPasswordResponse:(NSDictionary *)parsedObject {
-    NSString *validationResult;
+    NSMutableString *validationResult = [[NSMutableString alloc] init];
     
     if ([[parsedObject allKeys] containsObject:@"status"]) {
         id statusCode = [parsedObject objectForKey:@"status"];
+        NSString *statusCodeString = [NSString stringWithFormat:@"%@", statusCode];
+        int statusCodeValue = [statusCodeString integerValue];
         
-        if ((int)statusCode == 0) { // success, no errors
+        if (statusCodeValue == 0) { // success, no errors
             validationResult = nil;
             
-        } else if ((int)statusCode == 1) { // error
+        } else if (statusCodeValue == 1) { // error
             if ([[parsedObject allKeys] containsObject:@"errorCode"]) {
                 
                 if ([[parsedObject allKeys] containsObject:@"errorMessage"]) {
@@ -430,7 +432,10 @@ static NSString *filesPath      = @"/DataSourceList?all=true";
                         validationResult = (NSString *)responseErrorMessage;
                         
                     } else if ([responseErrorMessage isKindOfClass:[NSDictionary class]]) {
-                        validationResult = [NSString stringWithFormat:@"%@", (NSDictionary *)responseErrorMessage];
+                        for (id key in [responseErrorMessage allKeys]) {
+                            id value = [responseErrorMessage objectForKey: key];
+                            [validationResult appendString:[NSString stringWithFormat: @"%@", value]];
+                        }
                         
                     } else {
                         validationResult = [NSString stringWithFormat:@"%@", responseErrorMessage];
