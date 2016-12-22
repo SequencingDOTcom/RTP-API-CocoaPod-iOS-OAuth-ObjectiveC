@@ -417,7 +417,7 @@ static NSString *filesPath      = @"/DataSourceList?all=true";
     if ([[parsedObject allKeys] containsObject:@"status"]) {
         id statusCode = [parsedObject objectForKey:@"status"];
         NSString *statusCodeString = [NSString stringWithFormat:@"%@", statusCode];
-        int statusCodeValue = [statusCodeString integerValue];
+        int statusCodeValue = (int)[statusCodeString integerValue];
         
         if (statusCodeValue == 0) { // success, no errors
             validationResult = nil;
@@ -429,28 +429,28 @@ static NSString *filesPath      = @"/DataSourceList?all=true";
                     id responseErrorMessage = [parsedObject objectForKey:@"errorMessage"];
                     
                     if ([responseErrorMessage isKindOfClass:[NSString class]]) {
-                        validationResult = (NSString *)responseErrorMessage;
+                        [validationResult appendString:[NSString stringWithFormat:@"%@", responseErrorMessage]];
                         
                     } else if ([responseErrorMessage isKindOfClass:[NSDictionary class]]) {
                         for (id key in [responseErrorMessage allKeys]) {
                             id value = [responseErrorMessage objectForKey: key];
-                            [validationResult appendString:[NSString stringWithFormat: @"%@", value]];
+                            [validationResult appendString:[NSString stringWithFormat:@"%@", value]];
                         }
                         
                     } else {
-                        validationResult = [NSString stringWithFormat:@"%@", responseErrorMessage];
+                        [validationResult appendString:[NSString stringWithFormat:@"%@", responseErrorMessage]];;
                     }
                 } else {
-                    validationResult = [NSString stringWithFormat:@"Server error, error status code: %d", (int)[parsedObject objectForKey:@"errorCode"]];
+                    [validationResult appendString:[NSString stringWithFormat:@"Server error, error status code: %d", (int)[parsedObject objectForKey:@"errorCode"]]];
                 }
             } else {
-                validationResult = @"Server error, unknown error status code";
+                [validationResult appendString:@"Server error, unknown error status code"];
             }
         } else {
-            validationResult = @"Server error, server response is invalid";
+            [validationResult appendString:@"Server error, server response is invalid"];
         }
     } else {
-        validationResult = @"Server error, server response is invalid";
+        [validationResult appendString:@"Server error, server response is invalid"];
     }
     
     return validationResult;
