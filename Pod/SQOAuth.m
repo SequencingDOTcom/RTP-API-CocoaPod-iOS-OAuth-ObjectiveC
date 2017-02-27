@@ -126,7 +126,7 @@
         }
         
         // let's return valid token
-        completion(updatedToken);
+        completion(YES);
     }];
 }
 
