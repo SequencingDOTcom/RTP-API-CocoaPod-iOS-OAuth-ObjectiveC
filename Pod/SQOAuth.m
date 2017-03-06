@@ -6,7 +6,17 @@
 #import "SQOAuth.h"
 #import "SQServerManager.h"
 #import "SQToken.h"
-#import "SQAuthResult.h"
+#import "SQTokenStorageAppSettings.h"
+#import "SQTokenStorageProtocol.h"
+
+
+
+@interface SQOAuth ()
+
+@property (weak, nonatomic) id<SQAuthorizationProtocol> authorizationDelegate;
+@property (weak, nonatomic) id<SQTokenStorageProtocol>  tokenStorageDelegate;
+
+@end
 
 
 
@@ -19,13 +29,27 @@
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         instance = [[SQOAuth alloc] init];
+        // [instance setTokenStorageDelegate:tokenStorage];
     });
     return instance;
 }
 
 
-- (void)registrateApplicationParametersCliendID:(NSString *)client_id ClientSecret:(NSString *)client_secret RedirectUri:(NSString *)redirect_uri Scope:(NSString *)scope {
-    [[SQServerManager sharedInstance] registrateParametersCliendID:client_id ClientSecret:client_secret RedirectUri:redirect_uri Scope:scope];
+- (id<SQTokenStorageProtocol>)tokenStorageDelegate {
+    return [[SQTokenStorageAppSettings alloc] init];
+}
+
+
+- (void)registrateApplicationParametersCliendID:(NSString *)client_id
+                                   clientSecret:(NSString *)client_secret
+                                    redirectUri:(NSString *)redirect_uri
+                                          scope:(NSString *)scope
+                                  oAuthDelegate:(id<SQAuthorizationProtocol>)delegate {
+    
+    if (client_id && client_secret && redirect_uri && scope)
+        [[SQServerManager sharedInstance] registrateParametersCliendID:client_id ClientSecret:client_secret RedirectUri:redirect_uri Scope:scope];
+    
+    self.authorizationDelegate = delegate;
 }
 
 
@@ -37,16 +61,18 @@
     [[SQServerManager sharedInstance] authorizeUser:^(SQToken *token, BOOL didCancel, BOOL error) {
         
         if (token.accessToken != nil) {
-            [self.authorizationDelegate userIsSuccessfullyAuthorized:token];
+            [self.tokenStorageDelegate saveToken:token];
+            
+            if (self.authorizationDelegate)
+                [self.authorizationDelegate userIsSuccessfullyAuthorized:token];
             
         } else if (didCancel) {
-            if ([self.authorizationDelegate respondsToSelector:@selector(userDidCancelAuthorization)]) {
+            if (self.authorizationDelegate)
                 [self.authorizationDelegate userDidCancelAuthorization];
-            }
             
         } else if (error) {
-            [self.authorizationDelegate userIsNotAuthorized];
-            
+            if (self.authorizationDelegate)
+                [self.authorizationDelegate userIsNotAuthorized];
         }
     }];
 }
@@ -57,15 +83,15 @@
 #pragma mark - Token methods for Authorized user
 
 - (void)token:(void(^)(SQToken *token))tokenResult {
-    if ([self isTokenUpToDay]) { // token is valid > let's return current token
-        SQToken *currentToken = [[SQAuthResult sharedInstance] token];
+    SQToken *currentToken = [self.tokenStorageDelegate loadToken];
+    
+    if ([self isTokenUpToDay]) // token is valid > let's return current token
         tokenResult(currentToken);
-        
-    } else { // token is expired > let's update it
-        [self updateUserTokenWithCompletion:^(BOOL success) {
-            
-            if (success) {
-                SQToken *updatedToken = [[SQAuthResult sharedInstance] token];
+    
+    else { // token is expired > let's update it
+        [self withRefreshToken:currentToken updateAccessToken:^(SQToken *updatedToken) {
+            if (updatedToken) {
+                [self.tokenStorageDelegate saveToken:updatedToken];
                 tokenResult(updatedToken);
                 
             } else // smth is wrong, we can't update token
@@ -76,16 +102,14 @@
 
 
 - (BOOL)isTokenUpToDay {
-    NSLog(@">>>>> [SQOAuth]: verifying if Token is UpToDay");
-    
     BOOL tokenIsValid = NO;
-    SQToken *currentToken = [[SQAuthResult sharedInstance] token];
+    SQToken *currentToken = [self.tokenStorageDelegate loadToken];
     
     if (currentToken) {
         NSDate *nowDate = [NSDate date];
         NSDate *expDate = currentToken.expirationDate;
         
-        if ([nowDate compare:expDate] == NSOrderedDescending) { // token is expired
+        if ([nowDate compare:expDate] == NSOrderedDescending) { // token is expired NSOrderedDescending
             NSLog(@">>>>> [SQOAuth]: token is expired");
             
         } else { // token is valid
@@ -93,55 +117,43 @@
             tokenIsValid = YES;
         }
     }
-    
     return tokenIsValid;
 }
 
 
-- (void)updateUserTokenWithCompletion:(void (^)(BOOL success))completion {
-    NSLog(@">>>>> [SQOAuth]: execute refresh token request (token update)");
-    SQToken *currentToken = [[SQAuthResult sharedInstance] token];
-    
-    if (currentToken.refreshToken == nil) { // we can't updated token without "refresh token" value
-        completion(NO);
+- (void)withRefreshToken:(SQToken *)refreshToken updateAccessToken:(void (^)(SQToken *))tokenResult {
+    if (refreshToken.refreshToken == nil) { // we can't updated token without "refresh token" value
+        tokenResult(nil);
         return;
     }
     
-    // current token is valid > let's execute refresh token request
-    [self withRefreshToken:currentToken updateAccessToken:^(SQToken *updatedToken) {
-        
-        if (updatedToken == nil) { // invalid token
-            completion(NO);
-            return;
-        }
-        
-        if (updatedToken.accessToken == nil) { // invalid token
-            completion(NO);
-            return;
-        }
-        
-        if (updatedToken.refreshToken == nil) { // invalid token
-            completion(NO);
-            return;
-        }
-        
-        // let's return valid token
-        completion(YES);
-    }];
-}
-
-
-- (void)withRefreshToken:(SQToken *)refreshToken updateAccessToken:(void (^)(SQToken *))tokenResult {
     [[SQServerManager sharedInstance] withRefreshToken:refreshToken
-                                     updateAccessToken:^(SQToken *token) {
+                                     updateAccessToken:^(SQToken *updatedToken) {
                                          
-                                         tokenResult(token);
+                                         if (!updatedToken) { // invalid token
+                                             tokenResult(nil);
+                                             return;
+                                         }
+                                         
+                                         if (!updatedToken.accessToken || [updatedToken.accessToken length] == 0) { // invalid token
+                                             tokenResult(nil);
+                                             return;
+                                         }
+                                         
+                                         if (!updatedToken.refreshToken || [updatedToken.refreshToken length] == 0) { // invalid token
+                                             tokenResult(nil);
+                                             return;
+                                         }
+                                         
+                                         // let's return valid token
+                                         tokenResult(updatedToken);
                                      }];
 }
 
 
 - (void)userDidSignOut {
-    [[SQServerManager sharedInstance] userDidSignOut];
+    [self.tokenStorageDelegate eraseToken];
+    self.authorizationDelegate = nil;
 }
 
 
@@ -154,10 +166,12 @@
     [[SQServerManager sharedInstance] registrateAccountForEmailAddress:emailAddress withResult:^(NSString *error) {
         
         if (error == nil) {
-            [self.signUpDelegate emailIsRegisteredSuccessfully];
+            if (self.authorizationDelegate)
+                [self.authorizationDelegate emailIsRegisteredSuccessfully];
             
         } else {
-            [self.signUpDelegate emailIsNotRegistered:error];
+            if (self.authorizationDelegate)
+                [self.authorizationDelegate emailIsNotRegistered:error];
         }
     }];
 }
@@ -171,10 +185,12 @@
     [[SQServerManager sharedInstance] resetPasswordForEmailAddress:emailAddress withResult:^(NSString *error) {
         
         if (error == nil) {
-            [self.resetPasswordDelegate applicationForPasswordResetIsAccepted];
+            if (self.authorizationDelegate)
+                [self.authorizationDelegate applicationForPasswordResetIsAccepted];
             
         } else {
-            [self.resetPasswordDelegate applicationForPasswordResetIsNotAccepted:error];
+            if (self.authorizationDelegate)
+                [self.authorizationDelegate applicationForPasswordResetIsNotAccepted:error];
         }
     }];
 }

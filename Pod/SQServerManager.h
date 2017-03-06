@@ -30,8 +30,5 @@
 - (void)withRefreshToken:(SQToken *)refreshToken updateAccessToken:(void(^)(SQToken *token))refreshedToken;
 
 
-// should be called when sign out, this method will stop refreshToken autoupdater
-- (void)userDidSignOut;
-
 
 @end

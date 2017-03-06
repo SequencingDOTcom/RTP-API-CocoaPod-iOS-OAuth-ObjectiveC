@@ -5,24 +5,20 @@
 
 #import <Foundation/Foundation.h>
 #import "SQAuthorizationProtocol.h"
-#import "SQResetPasswordProtocol.h"
-#import "SQSignUpProtocol.h"
-
 @class SQToken;
 
 
 @interface SQOAuth : NSObject
 
-@property (weak, nonatomic) id<SQAuthorizationProtocol> authorizationDelegate;
-@property (weak, nonatomic) id<SQResetPasswordProtocol> resetPasswordDelegate;
-@property (weak, nonatomic) id<SQSignUpProtocol>        signUpDelegate;
-
-
 // designated initializer
 + (instancetype)sharedInstance;
 
 // method to set up apllication registration parameters
-- (void)registrateApplicationParametersCliendID:(NSString *)client_id ClientSecret:(NSString *)client_secret RedirectUri:(NSString *)redirect_uri Scope:(NSString *)scope;
+- (void)registrateApplicationParametersCliendID:(NSString *)client_id
+                                   clientSecret:(NSString *)client_secret
+                                    redirectUri:(NSString *)redirect_uri 
+                                          scope:(NSString *)scope
+                                  oAuthDelegate:(id<SQAuthorizationProtocol>)delegate;
 
 // method to registrate new account
 - (void)registrateNewAccountForEmailAddress:(NSString *)emailAddress;
@@ -38,8 +34,7 @@
 - (void)token:(void(^)(SQToken *token))tokenResult;
 
 // shoud be used when user is authorized but token is expired
-- (void)withRefreshToken:(SQToken *)refreshToken updateAccessToken:(void(^)(SQToken *token))tokenResult;
-
+- (void)withRefreshToken:(SQToken *)refreshToken updateAccessToken:(void(^)(SQToken *updatedToken))tokenResult;
 
 // should be called when sign out, this method will stop refreshToken autoupdater
 - (void)userDidSignOut;

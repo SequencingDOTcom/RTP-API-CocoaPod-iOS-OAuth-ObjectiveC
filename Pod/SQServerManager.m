@@ -7,7 +7,6 @@
 #import "SQLoginWebViewController.h"
 #import "SQToken.h"
 #import "SQHttpHelper.h"
-#import "SQAuthResult.h"
 #import "SQRequestHelper.h"
 
 
@@ -77,10 +76,11 @@ static NSString *filesPath      = @"/DataSourceList?all=true";
                         ClientSecret:(NSString *)client_secret
                          RedirectUri:(NSString *)redirect_uri
                                Scope:(NSString *)scope {
-    self.client_id = client_id;
-    self.client_secret = client_secret;
-    self.redirect_uri = redirect_uri;
-    self.scope = scope;
+    (client_id && [client_id length] > 0)         ? self.client_id = client_id         : NSLog(@"client_id is empty");
+    (client_secret && [client_secret length] > 0) ? self.client_secret = client_secret : NSLog(@"client_secret is empty");
+    (redirect_uri && [redirect_uri length] > 0)   ? self.redirect_uri = redirect_uri   : NSLog(@"redirect_uri is empty");
+    (scope && [scope length] > 0)                 ? self.scope = scope                 : NSLog(@"scope is empty");
+    
     [[SQRequestHelper sharedInstance] rememberRedirectUri:redirect_uri];
 }
 
@@ -128,7 +128,6 @@ static NSString *filesPath      = @"/DataSourceList?all=true";
                 [self postForTokenWithCode:[response objectForKey:@"code"] onSuccess:^(SQToken *token) {
                     if (token) {
                         [self stopActivityIndicator];
-                        [[SQAuthResult sharedInstance] setToken:token];
                         result(token, NO, NO);
                         
                     } else {
@@ -222,8 +221,7 @@ static NSString *filesPath      = @"/DataSourceList?all=true";
         if (updatedToken.refreshToken == nil) {
             updatedToken.refreshToken = refreshToken.refreshToken;
         }
-        // save new token into SQAuthResult container
-        [[SQAuthResult sharedInstance] setToken:updatedToken];
+        
         refreshedToken(updatedToken);
         
     } onFailure:^(NSError *error) {
@@ -279,15 +277,6 @@ static NSString *filesPath      = @"/DataSourceList?all=true";
                                     failure(error);
                                 }
                             }];
-}
-
-
-
-#pragma mark -
-#pragma mark for Authorized user. Sign Out
-
-- (void)userDidSignOut {
-    [[SQAuthResult sharedInstance] setToken:nil];
 }
 
 
