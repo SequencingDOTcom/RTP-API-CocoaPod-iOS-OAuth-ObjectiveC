@@ -13,39 +13,12 @@ NSString *KEY_TOKEN_ACCESS = @"__SEQUENCING-OAUTH-COCOAPOD-OBJC-PLUGIN-USERTOKEN
 
 
 
-@interface SQTokenStorageAppSettings ()
-
-@property (nonatomic) NSUserDefaults *userDefaults;
-
-@end
-
-
-
-
 @implementation SQTokenStorageAppSettings
-
-- (instancetype)init {
-    self = [super init];
-    if (self) {
-        self.userDefaults = [NSUserDefaults standardUserDefaults];
-    }
-    
-    //NSLog(@"SQTokenStorageAppSettings INIT");
-    return self;
-}
-
-- (void)dealloc {
-    //NSLog(@"SQTokenStorageAppSettings DEALLOC");
-}
-
 
 
 - (SQToken *)loadToken {
-    [_userDefaults synchronize];
-    NSData *tokenData = [_userDefaults objectForKey:KEY_TOKEN_ACCESS];
+    NSData *tokenData = [[NSUserDefaults standardUserDefaults] objectForKey:KEY_TOKEN_ACCESS];
     SQToken *token = [NSKeyedUnarchiver unarchiveObjectWithData:tokenData];
-    
-    //NSLog(@"load token: %@", [token accessToken]);
     if (token)
         return token;
     else
@@ -54,9 +27,7 @@ NSString *KEY_TOKEN_ACCESS = @"__SEQUENCING-OAUTH-COCOAPOD-OBJC-PLUGIN-USERTOKEN
 
 
 - (void)saveToken:(SQToken *)token {
-    //NSLog(@"save token: %@", [token accessToken]);
     if (!token) return;
-    
     if ([token.accessToken length] == 0) return;
     
     SQToken *oldToken = [self loadToken];
@@ -75,13 +46,13 @@ NSString *KEY_TOKEN_ACCESS = @"__SEQUENCING-OAUTH-COCOAPOD-OBJC-PLUGIN-USERTOKEN
 
 - (void)archiveToken:(SQToken *)token {
     NSData *tokenData = [NSKeyedArchiver archivedDataWithRootObject:token];
-    [_userDefaults setObject:tokenData forKey:KEY_TOKEN_ACCESS];
-    [_userDefaults synchronize];
+    [[NSUserDefaults standardUserDefaults] setObject:tokenData forKey:KEY_TOKEN_ACCESS];
+    [[NSUserDefaults standardUserDefaults] synchronize];
 }
 
 
 - (void)eraseToken {
-    [_userDefaults removeObjectForKey:KEY_TOKEN_ACCESS];
+    [[NSUserDefaults standardUserDefaults] removeObjectForKey:KEY_TOKEN_ACCESS];
 }
 
 

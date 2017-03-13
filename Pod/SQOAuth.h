@@ -3,6 +3,7 @@
 //  Copyright © 2015-2016 Sequencing.com. All rights reserved
 //
 
+#import <UIKit/UIKit.h>
 #import <Foundation/Foundation.h>
 #import "SQAuthorizationProtocol.h"
 @class SQToken;

@@ -23,7 +23,7 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
 
 @interface SQOAuth ()
 
-@property (weak, nonatomic) id<SQTokenStorageProtocol> tokenStorageDelegate;
+@property (strong, nonatomic) id<SQTokenStorageProtocol> tokenStorageDelegate;
 
 // activity indicator with label properties
 @property (retain, nonatomic) UIView *messageFrame;
@@ -48,14 +48,10 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
     dispatch_once(&onceToken, ^{
         instance = [[SQOAuth alloc] init];
         
-        // SQTokenStorageAppSettings *tokenStorage = [[SQTokenStorageAppSettings alloc] init];
-        // [instance setTokenStorageDelegate:tokenStorage];
+        SQTokenStorageAppSettings *tokenStorage = [[SQTokenStorageAppSettings alloc] init];
+        [instance setTokenStorageDelegate:tokenStorage];
     });
     return instance;
-}
-
-- (id<SQTokenStorageProtocol>)tokenStorageDelegate {
-    return [[SQTokenStorageAppSettings alloc] init];
 }
 
 
