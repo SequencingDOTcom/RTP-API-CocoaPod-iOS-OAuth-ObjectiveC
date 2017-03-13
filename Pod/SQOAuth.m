@@ -23,7 +23,7 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
 
 @interface SQOAuth ()
 
-@property (strong, nonatomic) id<SQTokenStorageProtocol>  tokenStorageDelegate;
+@property (weak, nonatomic) id<SQTokenStorageProtocol> tokenStorageDelegate;
 
 // activity indicator with label properties
 @property (retain, nonatomic) UIView *messageFrame;
@@ -48,11 +48,16 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
     dispatch_once(&onceToken, ^{
         instance = [[SQOAuth alloc] init];
         
-        SQTokenStorageAppSettings *tokenStorage = [[SQTokenStorageAppSettings alloc] init];
-        [instance setTokenStorageDelegate:tokenStorage];
+        // SQTokenStorageAppSettings *tokenStorage = [[SQTokenStorageAppSettings alloc] init];
+        // [instance setTokenStorageDelegate:tokenStorage];
     });
     return instance;
 }
+
+- (id<SQTokenStorageProtocol>)tokenStorageDelegate {
+    return [[SQTokenStorageAppSettings alloc] init];
+}
+
 
 
 
@@ -74,7 +79,7 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
 
 - (void)authorizeUserWithOAuthDelegate:(id<SQAuthorizationProtocol>)delegate {
     self.authorizationDelegate = delegate;
-    [self viewController:delegate showActivityIndicatorWithText:@"Authorizing user"];
+    [self viewController:(UIViewController *)delegate showActivityIndicatorWithText:@"Authorizing user"];
     [((UIViewController *)delegate).view setUserInteractionEnabled:NO];
     
     [[SQServerManager sharedInstance] authorizeUser:^(SQToken *token, BOOL didCancel, BOOL error) {
