@@ -10,24 +10,23 @@
 
 @interface SQOAuth : NSObject
 
+@property (weak, nonatomic) id<SQAuthorizationProtocol> authorizationDelegate;
+
 // designated initializer
 + (instancetype)sharedInstance;
 
 // method to set up apllication registration parameters
-- (void)registrateApplicationParametersCliendID:(NSString *)client_id
-                                   clientSecret:(NSString *)client_secret
-                                    redirectUri:(NSString *)redirect_uri 
-                                          scope:(NSString *)scope
-                                  oAuthDelegate:(id<SQAuthorizationProtocol>)delegate;
+- (void)registerApplicationParametersCliendID:(NSString *)client_id
+                                 clientSecret:(NSString *)client_secret
+                                  redirectUri:(NSString *)redirect_uri
+                                        scope:(NSString *)scope;
 
-// method to registrate new account
-- (void)registrateNewAccountForEmailAddress:(NSString *)emailAddress;
-
-// method to reset password
-- (void)resetPasswordForEmailAddress:(NSString *)emailAddress;
 
 // authorization method that uses SQAuthorizationProtocol as result
-- (void)authorizeUser;
+- (void)authorizeUserWithOAuthDelegate:(id<SQAuthorizationProtocol>)delegate;
+
+// method to registrate new account / resetpassword
+- (void)callRegisterResetAccountFlowForViewController:(UIViewController *)viewController;
 
 
 // receive updated token

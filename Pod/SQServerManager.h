@@ -14,7 +14,10 @@
 + (instancetype)sharedInstance;
 
 // method to set up apllication registration parameters
-- (void)registrateParametersCliendID:(NSString *)client_id ClientSecret:(NSString *)client_secret RedirectUri:(NSString *)redirect_uri Scope:(NSString *)scope;
+- (void)registrateParametersCliendID:(NSString *)client_id
+                        clientSecret:(NSString *)client_secret
+                         redirectUri:(NSString *)redirect_uri
+                               scope:(NSString *)scope;
 
 // for guest user, method to authorize user on a lower level
 - (void)authorizeUser:(void(^)(SQToken *token, BOOL didCancel, BOOL error))result;

@@ -8,15 +8,33 @@
 #import "SQToken.h"
 #import "SQTokenStorageAppSettings.h"
 #import "SQTokenStorageProtocol.h"
+#import "SQEmailHelper.h"
+
+
+#define kMainQueue dispatch_get_main_queue()
+
+typedef NS_ENUM(NSInteger, ViewOrientation) {
+    ViewOrientationPortrait,
+    ViewOrientationLandscape
+};
+
 
 
 
 @interface SQOAuth ()
 
-@property (weak, nonatomic) id<SQAuthorizationProtocol> authorizationDelegate;
-@property (weak, nonatomic) id<SQTokenStorageProtocol>  tokenStorageDelegate;
+@property (strong, nonatomic) id<SQTokenStorageProtocol>  tokenStorageDelegate;
+
+// activity indicator with label properties
+@property (retain, nonatomic) UIView *messageFrame;
+@property (retain, nonatomic) UIActivityIndicatorView *activityIndicator;
+@property (retain, nonatomic) UILabel *strLabel;
+
+@property (assign, nonatomic) CGSize viewSizePortrait;
+@property (assign, nonatomic) CGSize viewSizeLandscape;
 
 @end
+
 
 
 
@@ -29,53 +47,60 @@
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         instance = [[SQOAuth alloc] init];
-        // [instance setTokenStorageDelegate:tokenStorage];
+        
+        SQTokenStorageAppSettings *tokenStorage = [[SQTokenStorageAppSettings alloc] init];
+        [instance setTokenStorageDelegate:tokenStorage];
     });
     return instance;
 }
 
 
-- (id<SQTokenStorageProtocol>)tokenStorageDelegate {
-    return [[SQTokenStorageAppSettings alloc] init];
-}
 
+#pragma mark - register app id's
 
-- (void)registrateApplicationParametersCliendID:(NSString *)client_id
-                                   clientSecret:(NSString *)client_secret
-                                    redirectUri:(NSString *)redirect_uri
-                                          scope:(NSString *)scope
-                                  oAuthDelegate:(id<SQAuthorizationProtocol>)delegate {
+- (void)registerApplicationParametersCliendID:(NSString *)client_id
+                                 clientSecret:(NSString *)client_secret
+                                  redirectUri:(NSString *)redirect_uri
+                                        scope:(NSString *)scope {
     
     if (client_id && client_secret && redirect_uri && scope)
-        [[SQServerManager sharedInstance] registrateParametersCliendID:client_id ClientSecret:client_secret RedirectUri:redirect_uri Scope:scope];
-    
-    self.authorizationDelegate = delegate;
+        [[SQServerManager sharedInstance] registrateParametersCliendID:client_id clientSecret:client_secret redirectUri:redirect_uri scope:scope];
 }
 
 
 
 
-#pragma mark - for Guest user
+#pragma mark - authorize user
 
-- (void)authorizeUser {
+- (void)authorizeUserWithOAuthDelegate:(id<SQAuthorizationProtocol>)delegate {
+    self.authorizationDelegate = delegate;
+    [self viewController:delegate showActivityIndicatorWithText:@"Authorizing user"];
+    [((UIViewController *)delegate).view setUserInteractionEnabled:NO];
+    
     [[SQServerManager sharedInstance] authorizeUser:^(SQToken *token, BOOL didCancel, BOOL error) {
-        
-        if (token.accessToken != nil) {
-            [self.tokenStorageDelegate saveToken:token];
+        dispatch_async(kMainQueue, ^{
             
-            if (self.authorizationDelegate)
-                [self.authorizationDelegate userIsSuccessfullyAuthorized:token];
+            [self stopActivityIndicator];
+            [((UIViewController *)delegate).view setUserInteractionEnabled:YES];
             
-        } else if (didCancel) {
-            if (self.authorizationDelegate)
-                [self.authorizationDelegate userDidCancelAuthorization];
-            
-        } else if (error) {
-            if (self.authorizationDelegate)
-                [self.authorizationDelegate userIsNotAuthorized];
-        }
+            if (token.accessToken) {
+                [self.tokenStorageDelegate saveToken:token];
+                
+                if (self.authorizationDelegate)
+                    [self.authorizationDelegate userIsSuccessfullyAuthorized:token];
+                
+            } else if (didCancel) {
+                if (self.authorizationDelegate)
+                    [self.authorizationDelegate userDidCancelAuthorization];
+                
+            } else if (error) {
+                if (self.authorizationDelegate)
+                    [self.authorizationDelegate userIsNotAuthorized];
+            }
+        });
     }];
 }
+
 
 
 
@@ -159,40 +184,359 @@
 
 
 
-#pragma mark -
-#pragma mark Registrate new account
 
-- (void)registrateNewAccountForEmailAddress:(NSString *)emailAddress {
+
+#pragma mark - Registrate/Reset account flow
+
+- (void)callRegisterResetAccountFlowForViewController:(UIViewController *)controller {
+    [controller.view setUserInteractionEnabled:NO];
+    
+    UIAlertController *registrationPopup = [UIAlertController alertControllerWithTitle:@"Registration / Reset"
+                                                                               message:@"Please enter your email address"
+                                                                        preferredStyle:UIAlertControllerStyleAlert];
+    
+    UIAlertAction *cancelButton = [UIAlertAction actionWithTitle:@"Cancel"
+                                                           style:UIAlertActionStyleCancel
+                                                         handler:^(UIAlertAction *action){
+                                                             dispatch_async(kMainQueue, ^{
+                                                                 
+                                                                 UITextField *emailTextField = registrationPopup.textFields.firstObject;
+                                                                 [emailTextField resignFirstResponder];
+                                                                 [controller.view endEditing:YES];
+                                                                 [controller.view setUserInteractionEnabled:YES];
+                                                                 [controller dismissViewControllerAnimated:YES completion:nil];
+                                                             });
+                                                         }];
+    
+    UIAlertAction *registerButton = [UIAlertAction actionWithTitle:@"Register new account"
+                                                             style:UIAlertActionStyleDefault
+                                                           handler:^(UIAlertAction *action){
+                                                               
+                                                               UITextField *emailTextField = registrationPopup.textFields.firstObject;
+                                                               [self viewController:controller startRegistationFlow:emailTextField.text];
+                                                           }];
+    
+    UIAlertAction *resetPasswordButton = [UIAlertAction actionWithTitle:@"Reset password"
+                                                                  style:UIAlertActionStyleDefault
+                                                                handler:^(UIAlertAction *action){
+                                                                    
+                                                                    UITextField *emailTextField = registrationPopup.textFields.firstObject;
+                                                                    [self viewController:controller startResetPasswordFlow:emailTextField.text];
+                                                                }];
+    
+    [registrationPopup addTextFieldWithConfigurationHandler:^(UITextField *textField) {
+        [textField setKeyboardType:UIKeyboardTypeEmailAddress];
+        textField.placeholder = @"enter email address";
+        textField.clearButtonMode = UITextFieldViewModeWhileEditing;
+    }];
+    [registrationPopup addAction:cancelButton];
+    [registrationPopup addAction:registerButton];
+    [registrationPopup addAction:resetPasswordButton];
+    
+    [controller presentViewController:registrationPopup animated:YES completion:nil];
+}
+
+
+
+- (void)viewController:(UIViewController *)controller startRegistationFlow:(NSString *)emailAddress {
+    if (!emailAddress || [emailAddress length] == 0) {
+        [self viewController:controller
+          showAlertWithTitle:@"Registration error"
+                 withMessage:@"Email address is empty. Please provide valid email address."];
+        [controller.view setUserInteractionEnabled:YES];
+        return;
+    }
+    
+    if (![SQEmailHelper isEmailValid:emailAddress]) {
+        [self viewController:controller
+          showAlertWithTitle:@"Registration error"
+                 withMessage:@"Invalid email address was entered. Please provide valid email address."];
+        [controller.view setUserInteractionEnabled:YES];
+        return;
+    }
+    
+    
+    [self viewController:controller showActivityIndicatorWithText:@"Registering email"];
+    
     [[SQServerManager sharedInstance] registrateAccountForEmailAddress:emailAddress withResult:^(NSString *error) {
-        
-        if (error == nil) {
-            if (self.authorizationDelegate)
-                [self.authorizationDelegate emailIsRegisteredSuccessfully];
+        dispatch_async(kMainQueue, ^{
+            [self stopActivityIndicator];
+            [controller.view setUserInteractionEnabled:YES];
             
-        } else {
-            if (self.authorizationDelegate)
-                [self.authorizationDelegate emailIsNotRegistered:error];
-        }
+            if (!error)
+                [self viewController:controller
+                  showAlertWithTitle:@"Registration success"
+                         withMessage:@"Please check your mail box and follow instruction to activate your account."];
+            
+            else
+                [self viewController:controller
+                  showAlertWithTitle:@"Registration error"
+                         withMessage:error];
+        });
     }];
 }
 
 
 
-#pragma mark -
-#pragma mark Reset password
-
-- (void)resetPasswordForEmailAddress:(NSString *)emailAddress {
+- (void)viewController:(UIViewController *)controller startResetPasswordFlow:(NSString *)emailAddress {
+    if (!emailAddress || [emailAddress length] == 0) {
+        [self viewController:controller
+          showAlertWithTitle:@"Reset password error"
+                 withMessage:@"Email address is empty. Please provide valid email address."];
+        [controller.view setUserInteractionEnabled:YES];
+        return;
+    }
+    
+    if (![SQEmailHelper isEmailValid:emailAddress]) {
+        [self viewController:controller
+          showAlertWithTitle:@"Reset password error"
+                 withMessage:@"Invalid email address was entered. Please provide valid email address."];
+        [controller.view setUserInteractionEnabled:YES];
+        return;
+    }
+    
+    
+    [self viewController:controller showActivityIndicatorWithText:@"Reset password"];
+    
     [[SQServerManager sharedInstance] resetPasswordForEmailAddress:emailAddress withResult:^(NSString *error) {
-        
-        if (error == nil) {
-            if (self.authorizationDelegate)
-                [self.authorizationDelegate applicationForPasswordResetIsAccepted];
+        dispatch_async(kMainQueue, ^{
+            [self stopActivityIndicator];
+            [controller.view setUserInteractionEnabled:YES];
             
-        } else {
-            if (self.authorizationDelegate)
-                [self.authorizationDelegate applicationForPasswordResetIsNotAccepted:error];
-        }
+            if (!error)
+                [self viewController:controller
+                  showAlertWithTitle:@"Reset password success"
+                         withMessage:@"Please check your mail box and follow instruction to reset your password."];
+            
+            else
+                [self viewController:controller
+                  showAlertWithTitle:@"Reset password error"
+                         withMessage:error];
+        });
     }];
+}
+
+
+
+
+#pragma mark - Activity indicator
+
+- (void)viewController:(UIViewController *)controller showActivityIndicatorWithText:(NSString *)text {
+    dispatch_async(kMainQueue, ^{
+        /*
+         // getting the rootViewController directly from cocoapod
+         UIViewController *topmostVC;
+         UIViewController *rootVC1 = [[[[UIApplication sharedApplication] windows] firstObject] rootViewController];
+         
+         if ([rootVC1 isKindOfClass:[UINavigationController class]]) {
+         UINavigationController *navVC = (UINavigationController *)rootVC1;
+         topmostVC = [navVC viewControllers][0];
+         self.mainVC = topmostVC;
+         } else {
+         self.mainVC = [[[[UIApplication sharedApplication] windows] firstObject] rootViewController];
+         }*/
+        
+        ViewOrientation viewOrientation = [self detectViewOrientation];
+        [self saveViewControllerSize:controller forViewOrientation:viewOrientation];
+        
+        // message frame
+        self.messageFrame = [[UIView alloc] initWithFrame:[self messageFrameDependingViewOrientation:viewOrientation]];
+        self.messageFrame.layer.cornerRadius = 10;
+        self.messageFrame.backgroundColor = [UIColor lightGrayColor];
+        self.messageFrame.alpha = 0.95;
+        
+        // differX value
+        CGFloat differX = [self differValueBetweenControllerWidth:([self viewCenterPointForViewOrientation:viewOrientation].x * 2)
+                                                    andFrameWidth:self.messageFrame.frame.size.width];
+        
+        // activityIndicator frame
+        self.activityIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhiteLarge];
+        CGRect activityIndicatorFrame = [self activityIndicatorFrameDependingOnMessageFrame:self.messageFrame.frame
+                                                                               differXValue:differX];
+        [self.activityIndicator setFrame:activityIndicatorFrame];
+        [self.activityIndicator startAnimating];
+        //[self.activityIndicator setBackgroundColor:[UIColor greenColor]];
+        
+        // label frame
+        self.strLabel = [[UILabel alloc] initWithFrame:[self labelFrameDependingOnMessageFrame:self.messageFrame.frame
+                                                                        activityIndicatorFrame:activityIndicatorFrame
+                                                                                  differXValue:differX]];
+        self.strLabel.text = text;
+        self.strLabel.textColor = [UIColor whiteColor];
+        self.strLabel.textAlignment = NSTextAlignmentCenter;
+        
+        // show resulted activity indicator on UI
+        [self.messageFrame addSubview:self.activityIndicator];
+        [self.messageFrame addSubview:self.strLabel];
+        [controller.view addSubview:self.messageFrame];
+        
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(updateActivityFrameLayout)
+                                                     name:UIApplicationDidChangeStatusBarOrientationNotification
+                                                   object:nil];
+    });
+}
+
+
+- (void)stopActivityIndicator {
+    dispatch_async(kMainQueue, ^{
+        [self.activityIndicator stopAnimating];
+        [self.messageFrame removeFromSuperview];
+        
+        self.messageFrame = nil;
+        self.activityIndicator = nil;
+        self.strLabel = nil;
+        
+        [[NSNotificationCenter defaultCenter] removeObserver:self];
+    });
+}
+
+
+- (void)updateActivityFrameLayout {
+    if (self.messageFrame && self.activityIndicator && self.strLabel) {
+        
+        ViewOrientation viewOrientation = [self detectViewOrientation];
+        
+        // message frame
+        [self.messageFrame setFrame:[self messageFrameDependingViewOrientation:viewOrientation]];
+        
+        // differX value
+        CGFloat differX = [self differValueBetweenControllerWidth:([self viewCenterPointForViewOrientation:viewOrientation].x * 2)
+                                                    andFrameWidth:self.messageFrame.frame.size.width];
+        
+        // activityIndicator frame
+        CGRect activityIndicatorFrame = [self activityIndicatorFrameDependingOnMessageFrame:self.messageFrame.frame
+                                                                               differXValue:differX];
+        [self.activityIndicator setFrame:activityIndicatorFrame];
+        
+        // label frame
+        [self.strLabel setFrame:[self labelFrameDependingOnMessageFrame:self.messageFrame.frame
+                                                 activityIndicatorFrame:activityIndicatorFrame
+                                                           differXValue:differX]];
+    }
+}
+
+
+
+- (ViewOrientation)detectViewOrientation {
+    switch ([[UIApplication sharedApplication] statusBarOrientation]) {
+        
+        case UIInterfaceOrientationUnknown:
+            return ViewOrientationPortrait; break;
+            
+        case UIInterfaceOrientationPortrait:
+            return ViewOrientationPortrait; break;
+            
+        case UIInterfaceOrientationPortraitUpsideDown:
+            return ViewOrientationPortrait; break;
+            
+        case UIInterfaceOrientationLandscapeLeft:
+            return ViewOrientationLandscape; break;
+            
+        case UIInterfaceOrientationLandscapeRight:
+            return ViewOrientationLandscape; break;
+            
+        default:
+            return ViewOrientationPortrait; break;
+    }
+}
+
+
+- (void)saveViewControllerSize:(UIViewController *)controller forViewOrientation:(ViewOrientation)viewOrientation {
+    switch (viewOrientation) {
+        
+        case ViewOrientationPortrait: {
+            self.viewSizePortrait = controller.view.frame.size;
+            CGSize sizeOpposite = CGSizeMake(0, 0);
+            sizeOpposite.width  = controller.view.frame.size.height;
+            sizeOpposite.height = controller.view.frame.size.width;
+            self.viewSizeLandscape = sizeOpposite;
+        }   break;
+            
+        case ViewOrientationLandscape: {
+            self.viewSizeLandscape = controller.view.frame.size;
+            CGSize sizeOpposite = CGSizeMake(0, 0);
+            sizeOpposite.width  = controller.view.frame.size.height;
+            sizeOpposite.height = controller.view.frame.size.width;
+            self.viewSizePortrait = sizeOpposite;
+        }   break;
+            
+        default: {
+            self.viewSizePortrait = controller.view.frame.size;
+            CGSize sizeOpposite = CGSizeMake(0, 0);
+            sizeOpposite.width  = controller.view.frame.size.height;
+            sizeOpposite.height = controller.view.frame.size.width;
+            self.viewSizeLandscape = sizeOpposite;
+        }   break;
+    }
+}
+
+
+- (CGPoint)viewCenterPointForViewOrientation:(ViewOrientation)viewOrientation {
+    switch (viewOrientation) {
+        case ViewOrientationPortrait:
+            return CGPointMake(self.viewSizePortrait.width / 2, self.viewSizePortrait.height / 2); break;
+        
+        case ViewOrientationLandscape:
+            return CGPointMake(self.viewSizeLandscape.width / 2, self.viewSizeLandscape.height / 2); break;
+            
+        default:
+            return CGPointMake(self.viewSizePortrait.width / 2, self.viewSizePortrait.height / 2); break;
+    }
+}
+
+
+- (CGFloat)differValueBetweenControllerWidth:(CGFloat)viewWidth andFrameWidth:(CGFloat)frameWidth {
+    CGFloat differX = (viewWidth - frameWidth) / 2;
+    return differX;
+}
+
+
+- (CGRect)messageFrameDependingViewOrientation:(ViewOrientation)viewOrientation {
+    CGPoint viewCenterPoint = [self viewCenterPointForViewOrientation:viewOrientation];
+    CGFloat controllerMidX = viewCenterPoint.x;
+    CGFloat controllerMidY = viewCenterPoint.y;
+    
+    CGFloat messageFrameWidth = 260;
+    CGFloat messageFrameHeight = 100;
+    CGFloat messageFrameX = controllerMidX - (messageFrameWidth / 2);
+    CGFloat messageFrameY = controllerMidY - (messageFrameHeight / 2);
+    
+    return CGRectMake(messageFrameX, messageFrameY, messageFrameWidth, messageFrameHeight);
+}
+
+
+- (CGRect)activityIndicatorFrameDependingOnMessageFrame:(CGRect)messageFrame differXValue:(CGFloat)differX {
+    CGFloat activityIndicatorWidth = 50;
+    CGFloat activityIndicatorHeight = 50;
+    CGFloat activityIndicatorX = CGRectGetMidX(messageFrame) - (activityIndicatorHeight / 2) - differX;
+    CGFloat activityIndicatorY = 10;
+    
+    return CGRectMake(activityIndicatorX, activityIndicatorY, activityIndicatorWidth, activityIndicatorHeight);
+}
+
+
+- (CGRect)labelFrameDependingOnMessageFrame:(CGRect)messageFrame activityIndicatorFrame:(CGRect)activityIndicatorFrame differXValue:(CGFloat)differX {
+    CGFloat labelWidth = messageFrame.size.width;
+    CGFloat labelHeight = messageFrame.size.height - activityIndicatorFrame.size.height;
+    CGFloat labelX = CGRectGetMidX(messageFrame) - (labelWidth / 2) - differX;
+    CGFloat labelY = activityIndicatorFrame.size.height;
+    
+    return CGRectMake(labelX, labelY, labelWidth, labelHeight);
+}
+
+
+
+
+#pragma mark - Alert popup
+
+- (void)viewController:(UIViewController *)controller showAlertWithTitle:(NSString *)title withMessage:(NSString *)message {
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:title
+                                                                   message:message
+                                                            preferredStyle:UIAlertControllerStyleAlert];
+    UIAlertAction *close = [UIAlertAction actionWithTitle:@"Ok" style:UIAlertActionStyleDefault handler:nil];
+    [alert addAction:close];
+    [controller presentViewController:alert animated:YES completion:nil];
 }
 
 

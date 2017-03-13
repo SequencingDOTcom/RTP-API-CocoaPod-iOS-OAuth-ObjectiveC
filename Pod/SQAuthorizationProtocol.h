@@ -10,17 +10,8 @@
 @protocol SQAuthorizationProtocol <NSObject>
 
 @required
-// authorization methods
 - (void)userIsSuccessfullyAuthorized:(SQToken *)token;
 - (void)userIsNotAuthorized;
 - (void)userDidCancelAuthorization;
-
-// registrate new account methods
-- (void)emailIsRegisteredSuccessfully;
-- (void)emailIsNotRegistered:(NSString *)errorMessage;
-
-// reset password methods
-- (void)applicationForPasswordResetIsAccepted;
-- (void)applicationForPasswordResetIsNotAccepted:(NSString *)errorMessage;
 
 @end
