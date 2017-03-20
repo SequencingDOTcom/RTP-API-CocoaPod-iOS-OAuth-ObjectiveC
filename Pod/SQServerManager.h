@@ -1,10 +1,11 @@
 //
 //  SQServerManager.h
-//  Copyright © 2015-2016 Sequencing.com. All rights reserved
+//  Copyright © 2017 Sequencing.com. All rights reserved
 //
 
-#import <Foundation/Foundation.h>
 
+#import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
 @class SQToken;
 
 
@@ -20,7 +21,16 @@
                                scope:(NSString *)scope;
 
 // for guest user, method to authorize user on a lower level
-- (void)authorizeUser:(void(^)(SQToken *token, BOOL didCancel, BOOL error))result;
+- (void)authorizeUserForVC:(UIViewController *)controller withResult:(void(^)(SQToken *token, BOOL didCancel, BOOL error))result;
+
+/*
+- (void)connectToSequencingWithClient_id:(NSString *)client_id
+                               userEmail:(NSString *)emailAddress
+                                   files:(NSArray *)filesArray
+                             redirectURI:(NSArray *)redirect_uri
+                              withResult:(void(^)(BOOL success, BOOL didCancel, NSString *error))result;*/
+
+
 
 // registrate account
 - (void)registrateAccountForEmailAddress:(NSString *)emailAddress withResult:(void(^)(NSString *error))result;

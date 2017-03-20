@@ -1,6 +1,6 @@
 //
 //  SQOAuth.h
-//  Copyright © 2015-2016 Sequencing.com. All rights reserved
+//  Copyright © 2017 Sequencing.com. All rights reserved
 //
 
 #import "SQOAuth.h"
@@ -8,6 +8,7 @@
 #import "SQToken.h"
 #import "SQTokenStorageAppSettings.h"
 #import "SQTokenStorageProtocol.h"
+
 #import "SQEmailHelper.h"
 
 
@@ -25,11 +26,11 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
 
 @property (strong, nonatomic) id<SQTokenStorageProtocol> tokenStorageDelegate;
 
+
 // activity indicator with label properties
 @property (retain, nonatomic) UIView *messageFrame;
 @property (retain, nonatomic) UIActivityIndicatorView *activityIndicator;
 @property (retain, nonatomic) UILabel *strLabel;
-
 @property (assign, nonatomic) CGSize viewSizePortrait;
 @property (assign, nonatomic) CGSize viewSizeLandscape;
 
@@ -62,10 +63,15 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
 - (void)registerApplicationParametersCliendID:(NSString *)client_id
                                  clientSecret:(NSString *)client_secret
                                   redirectUri:(NSString *)redirect_uri
-                                        scope:(NSString *)scope {
+                                        scope:(NSString *)scope
+                                oAuthDelegate:(id<SQAuthorizationProtocol>)oAuthDelegate
+                       viewControllerDelegate:(UIViewController *)viewControllerDelegate {
     
     if (client_id && client_secret && redirect_uri && scope)
         [[SQServerManager sharedInstance] registrateParametersCliendID:client_id clientSecret:client_secret redirectUri:redirect_uri scope:scope];
+    
+    self.authorizationDelegate = oAuthDelegate;
+    self.viewControllerDelegate = viewControllerDelegate;
 }
 
 
@@ -73,35 +79,37 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
 
 #pragma mark - authorize user
 
-- (void)authorizeUserWithOAuthDelegate:(id<SQAuthorizationProtocol>)delegate {
-    self.authorizationDelegate = delegate;
-    [self viewController:(UIViewController *)delegate showActivityIndicatorWithText:@"Authorizing user"];
-    [((UIViewController *)delegate).view setUserInteractionEnabled:NO];
+- (void)authorizeUser {
+    if (!self.authorizationDelegate)  return;
+    if (!self.viewControllerDelegate) return;
     
-    [[SQServerManager sharedInstance] authorizeUser:^(SQToken *token, BOOL didCancel, BOOL error) {
-        dispatch_async(kMainQueue, ^{
-            
-            [self stopActivityIndicator];
-            [((UIViewController *)delegate).view setUserInteractionEnabled:YES];
-            
-            if (token.accessToken) {
-                [self.tokenStorageDelegate saveToken:token];
-                
-                if (self.authorizationDelegate)
-                    [self.authorizationDelegate userIsSuccessfullyAuthorized:token];
-                
-            } else if (didCancel) {
-                if (self.authorizationDelegate)
-                    [self.authorizationDelegate userDidCancelAuthorization];
-                
-            } else if (error) {
-                if (self.authorizationDelegate)
-                    [self.authorizationDelegate userIsNotAuthorized];
-            }
-        });
-    }];
+    [self viewController:self.viewControllerDelegate showActivityIndicatorWithText:@"Authorizing user"];
+    [self.viewControllerDelegate.view setUserInteractionEnabled:NO];
+    
+    [[SQServerManager sharedInstance] authorizeUserForVC:self.viewControllerDelegate
+                                              withResult:^(SQToken *token, BOOL didCancel, BOOL error) {
+                                                  dispatch_async(kMainQueue, ^{
+                                                      
+                                                      [self stopActivityIndicator];
+                                                      [self.viewControllerDelegate.view setUserInteractionEnabled:YES];
+                                                      
+                                                      if (token.accessToken) {
+                                                          [self.tokenStorageDelegate saveToken:token];
+                                                          
+                                                          if (self.authorizationDelegate)
+                                                              [self.authorizationDelegate userIsSuccessfullyAuthorized:token];
+                                                          
+                                                      } else if (didCancel) {
+                                                          if (self.authorizationDelegate)
+                                                              [self.authorizationDelegate userDidCancelAuthorization];
+                                                          
+                                                      } else if (error) {
+                                                          if (self.authorizationDelegate)
+                                                              [self.authorizationDelegate userIsNotAuthorized];
+                                                      }
+                                                  });
+                                              }];
 }
-
 
 
 
@@ -179,7 +187,8 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
 
 - (void)userDidSignOut {
     [self.tokenStorageDelegate eraseToken];
-    self.authorizationDelegate = nil;
+    self.authorizationDelegate  = nil;
+    self.viewControllerDelegate = nil;
 }
 
 
@@ -189,8 +198,8 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
 
 #pragma mark - Registrate/Reset account flow
 
-- (void)callRegisterResetAccountFlowForViewController:(UIViewController *)controller {
-    [controller.view setUserInteractionEnabled:NO];
+- (void)callRegisterResetAccountFlow {
+    [self.viewControllerDelegate.view setUserInteractionEnabled:NO];
     
     UIAlertController *registrationPopup = [UIAlertController alertControllerWithTitle:@"Registration / Reset"
                                                                                message:@"Please enter your email address"
@@ -203,9 +212,9 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
                                                                  
                                                                  UITextField *emailTextField = registrationPopup.textFields.firstObject;
                                                                  [emailTextField resignFirstResponder];
-                                                                 [controller.view endEditing:YES];
-                                                                 [controller.view setUserInteractionEnabled:YES];
-                                                                 [controller dismissViewControllerAnimated:YES completion:nil];
+                                                                 [self.viewControllerDelegate.view endEditing:YES];
+                                                                 [self.viewControllerDelegate.view setUserInteractionEnabled:YES];
+                                                                 [self.viewControllerDelegate dismissViewControllerAnimated:YES completion:nil];
                                                              });
                                                          }];
     
@@ -214,7 +223,7 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
                                                            handler:^(UIAlertAction *action){
                                                                
                                                                UITextField *emailTextField = registrationPopup.textFields.firstObject;
-                                                               [self viewController:controller startRegistationFlow:emailTextField.text];
+                                                               [self viewController:self.viewControllerDelegate startRegistationFlow:emailTextField.text];
                                                            }];
     
     UIAlertAction *resetPasswordButton = [UIAlertAction actionWithTitle:@"Reset password"
@@ -222,19 +231,19 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
                                                                 handler:^(UIAlertAction *action){
                                                                     
                                                                     UITextField *emailTextField = registrationPopup.textFields.firstObject;
-                                                                    [self viewController:controller startResetPasswordFlow:emailTextField.text];
+                                                                    [self viewController:self.viewControllerDelegate startResetPasswordFlow:emailTextField.text];
                                                                 }];
     
     [registrationPopup addTextFieldWithConfigurationHandler:^(UITextField *textField) {
         [textField setKeyboardType:UIKeyboardTypeEmailAddress];
-        textField.placeholder = @"enter email address";
-        textField.clearButtonMode = UITextFieldViewModeWhileEditing;
+        [textField setPlaceholder:@"enter email address"];
+        [textField setClearButtonMode:UITextFieldViewModeWhileEditing];
     }];
     [registrationPopup addAction:cancelButton];
     [registrationPopup addAction:registerButton];
     [registrationPopup addAction:resetPasswordButton];
     
-    [controller presentViewController:registrationPopup animated:YES completion:nil];
+    [self.viewControllerDelegate presentViewController:registrationPopup animated:YES completion:nil];
 }
 
 
@@ -316,6 +325,7 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
         });
     }];
 }
+
 
 
 

@@ -1,39 +1,21 @@
 //
 //  SQServerManager.h
-//  Copyright © 2015-2016 Sequencing.com. All rights reserved
+//  Copyright © 2017 Sequencing.com. All rights reserved
 //
+
 
 #import "SQServerManager.h"
 #import "SQLoginWebViewController.h"
+// #import "SQConnectToWebViewController.h"
 #import "SQToken.h"
 #import "SQHttpHelper.h"
 #import "SQRequestHelper.h"
+// #import "SQOpenSSLEncrypt.h"
+// #import "NSString+AESCrypt.h"
+// #import "NSData+AESCrypt.h"
+// #import "NSData+AES256Encryption.h"
 
 
-#define kMainQueue dispatch_get_main_queue()
-#define VALID_STATUS_CODES @[@(200), @(301), @(302)]
-
-#define INVALID_SERVER_RESPONSE @"We are sorry as this app is experiencing a temporary issue.\nPlease try again in a few minutes."
-
-
-@interface SQServerManager ()
-
-// activity indicator with label properties
-@property (retain, nonatomic) UIView *messageFrame;
-@property (retain, nonatomic) UIActivityIndicatorView *activityIndicator;
-@property (retain, nonatomic) UILabel *strLabel;
-@property (retain, nonatomic) UIViewController *mainVC;
-
-// application parameters
-@property (readwrite, strong, nonatomic) NSString *client_id;
-@property (readwrite, strong, nonatomic) NSString *client_secret;
-@property (readwrite, strong, nonatomic) NSString *redirect_uri;
-@property (readwrite, strong, nonatomic) NSString *scope;
-
-@end
-
-
-@implementation SQServerManager
 
 // parameters for authorization request
 static NSString *authURL        = @"https://sequencing.com/oauth2/authorize";
@@ -54,6 +36,10 @@ static NSString *demoPath       = @"/DataSourceList?sample=true";
 static NSString *filesPath      = @"/DataSourceList?all=true";
 // static NSString *filesPath      = @"/DataSourceList?uploaded=true&shared=true&fromApps=true&allWithAltruist=true&sample=true";
 
+
+// registrate new account endpoint
+// #define kConnectToEndpoint          @"http://sequencing.com/connect"
+
 // registrate new account endpoint
 #define kRegisterNewAccountEndpoint @"https://sequencing.com/indexApi.php?q=sequencing/public/webservice/user/seq_register.json"
 
@@ -61,9 +47,30 @@ static NSString *filesPath      = @"/DataSourceList?all=true";
 #define kResetPasswordEndpoint      @"https://sequencing.com/indexApi.php?q=sequencing/public/webservice/user/seq_new_pass.json"
 
 
+#define kMainQueue dispatch_get_main_queue()
+#define VALID_STATUS_CODES @[@(200), @(301), @(302)]
 
-#pragma mark -
-#pragma mark Initializer
+#define INVALID_SERVER_RESPONSE @"We are sorry as this app is experiencing a temporary issue.\nPlease try again in a few minutes."
+
+
+
+
+
+@interface SQServerManager ()
+
+@property (readwrite, strong, nonatomic) NSString *client_id;
+@property (readwrite, strong, nonatomic) NSString *client_secret;
+@property (readwrite, strong, nonatomic) NSString *redirect_uri;
+@property (readwrite, strong, nonatomic) NSString *scope;
+
+@end
+
+
+
+
+@implementation SQServerManager
+
+#pragma mark -  Initializer
 
 + (instancetype) sharedInstance {
     static SQServerManager *manager = nil;
@@ -89,10 +96,12 @@ static NSString *filesPath      = @"/DataSourceList?all=true";
 
 
 
-#pragma mark -
-#pragma mark for Guest user. Authorization
 
-- (void)authorizeUser:(void (^)(SQToken *token, BOOL didCancel, BOOL error))result {
+#pragma mark - Authorization
+
+- (void)authorizeUserForVC:(UIViewController *)controller
+                withResult:(void (^)(SQToken *token, BOOL didCancel, BOOL error))result {
+    
     NSString *randomState = [self randomStringWithLength:[self randomInt]];
     NSString *client_id_upd = [self.client_id stringByAddingPercentEncodingWithAllowedCharacters:NSCharacterSet.URLQueryAllowedCharacterSet];
     NSString *urlString = [NSString stringWithFormat:
@@ -107,71 +116,55 @@ static NSString *filesPath      = @"/DataSourceList?all=true";
     NSURL *url = [NSURL URLWithString:urlString];
     
     // ===== authorizing user request =====
-    
     SQLoginWebViewController *loginWebViewController =
     [[SQLoginWebViewController alloc] initWithURL:url andCompletionBlock:^(NSMutableDictionary *response) {
-        NSLog(@"%@", response);
         
         if ([response objectForKey:@"state"]) {
             // first, must check if "state" from response matches "state" in request
             if (![[response objectForKey:@"state"] isEqualToString:randomState]) {
                 NSLog(@"state mismatch, response is being spoofed");
-                if (result) {
-                    //[self stopActivityIndicator];
-                    result(nil, NO, YES);
-                }
-            } else {
+                if (result) result(nil, NO, YES);
                 
-                // state matches - we can proceed with token request
-                // ===== getting token request ======
-                // [self startActivityIndicatorWithTitle:@"Authorizing user"];
+            } else { // state matches - we can proceed with token request
                 [self postForTokenWithCode:[response objectForKey:@"code"] onSuccess:^(SQToken *token) {
-                    if (token) {
-                        //[self stopActivityIndicator];
-                        result(token, NO, NO);
-                        
-                    } else {
-                        if (result) {
-                            //[self stopActivityIndicator];
-                            result(nil, NO, YES);
-                        }
-                    }
+                    if (token) result(token, NO, NO);
+                    
+                    else if (result) result(nil, NO, YES);
+                    
                 } onFailure:^(NSError *error) {
                     NSLog(@"error = %@", [error localizedDescription]);
-                    if (result) {
-                        //[self stopActivityIndicator];
-                        result(nil, NO, YES);
-                    }
+                    if (result) result(nil, NO, YES);
                 }];
             }
             
         } else if ([response objectForKey:@"didCancelAuthorization"]) {
-            if (result) {
-                //[self stopActivityIndicator];
-                result(nil, YES, NO);
-            }
+            if (result) result(nil, YES, NO);
             
         } else if ([response objectForKey:@"error"]) {
-            if (result) {
-                //[self stopActivityIndicator];
-                result(nil, NO, YES);
-            }
+            if (result) result(nil, NO, YES);
         }
     }];
     
-    UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:loginWebViewController];
-    UIViewController *mainVC = [[[[UIApplication sharedApplication] windows] firstObject] rootViewController];
-    [mainVC presentViewController:nav animated:YES completion:nil];
+    UINavigationController *navWebView = [[UINavigationController alloc] initWithRootViewController:loginWebViewController];
+    // UIViewController *mainVC = [[[[UIApplication sharedApplication] windows] firstObject] rootViewController];
+    [controller presentViewController:navWebView animated:YES completion:nil];
 }
 
+
+
+
+
+#pragma mark - Token methods
 
 - (void)postForTokenWithCode:(NSString *)code
                    onSuccess:(void(^)(SQToken *token))success
                    onFailure:(void(^)(NSError *error))failure {
+    
     NSDictionary *postParameters = [NSDictionary dictionaryWithObjectsAndKeys:
                             grant_type, @"grant_type",
                             code, @"code",
                             self.redirect_uri, @"redirect_uri", nil];
+    
     [SQHttpHelper execHttpRequestWithUrl:tokenURL
                              andMethod:@"POST"
                             andHeaders:nil
@@ -188,9 +181,8 @@ static NSString *filesPath      = @"/DataSourceList?all=true";
                                                                          options:0
                                                                            error:&jsonError];
             if (jsonError != nil) {
-                if (success) {
-                    success(nil);
-                }
+                if (success) success(nil);
+                
             } else {
                 SQToken *token = [SQToken new];
                 token.accessToken = [parsedObject objectForKey:@"access_token"];
@@ -199,36 +191,27 @@ static NSString *filesPath      = @"/DataSourceList?all=true";
                 token.tokenType = [parsedObject objectForKey:@"token_type"];
                 token.scope = [parsedObject objectForKey:@"scope"];
                 token.refreshToken = [parsedObject objectForKey:@"refresh_token"];
-                if (success) {
-                    success(token);
-                }
+                if (success) success(token);
+                
             }
-        } else if (failure) {
-            failure(error);
-        }
+        } else if (failure) failure(error);
     }];
 }
 
 
 
-#pragma mark -
-#pragma mark for Authorized user. Token methods
-
 - (void)withRefreshToken:(SQToken *)refreshToken
        updateAccessToken:(void(^)(SQToken *token))refreshedToken {
     
     [self postForNewTokenWithRefreshToken:refreshToken onSuccess:^(SQToken *updatedToken) {
-        if (updatedToken.refreshToken == nil) {
+        if (updatedToken.refreshToken == nil)
             updatedToken.refreshToken = refreshToken.refreshToken;
-        }
         
         refreshedToken(updatedToken);
         
     } onFailure:^(NSError *error) {
         NSLog(@"error = %@", [error localizedDescription]);
-        if (refreshedToken) {
-            refreshedToken(nil);
-        }
+        if (refreshedToken) refreshedToken(nil);
     }];
 }
 
@@ -259,9 +242,7 @@ static NSString *filesPath      = @"/DataSourceList?all=true";
                                                                                                  options:0
                                                                                                    error:&jsonError];
                                     if (jsonError != nil) {
-                                        if (success) {
-                                            success(nil);
-                                        }
+                                        if (success) success(nil);
                                     } else {
                                         SQToken *token = [SQToken new];
                                         token.accessToken = [parsedObject objectForKey:@"access_token"];
@@ -269,22 +250,81 @@ static NSString *filesPath      = @"/DataSourceList?all=true";
                                         token.expirationDate = [NSDate dateWithTimeIntervalSinceNow:interval];
                                         token.tokenType = [parsedObject objectForKey:@"token_type"];
                                         token.scope = [parsedObject objectForKey:@"scope"];
-                                        if (success) {
-                                            success(token);
-                                        }
+                                        if (success) success(token);
                                     }
-                                } else if (failure) {
-                                    failure(error);
-                                }
+                                } else if (failure) failure(error);
                             }];
 }
 
 
 
-#pragma mark -
-#pragma mark Registrate new account
+
+/*
+#pragma mark - Connect to request
+
+- (void)connectToSequencingWithClient_id:(NSString *)client_id
+                               userEmail:(NSString *)emailAddress
+                                   files:(NSArray *)filesArray
+                             redirectURI:(NSArray *)redirect_uri
+                              withResult:(void(^)(BOOL success, BOOL didCancel, NSString *error))result {
+    
+    NSString *key = @"3n3CrwwnzMqxOssv";
+    NSString *password = @"p5-buv9JA5EbFr55BELvtTmsVhZnFaCAhjUjQufV2fl6NhJGav_YkSuDklT7jL4j04tC3Uaec892W93GeeJHLA";
+    
+    
+    NSMutableDictionary *urlParametersDict = [[NSMutableDictionary alloc] init];
+    NSString *client_id_encoded = [client_id stringByAddingPercentEncodingWithAllowedCharacters:NSCharacterSet.URLQueryAllowedCharacterSet];
+    [urlParametersDict setObject:client_id_encoded forKey:@"client_id"];
+    [urlParametersDict setObject:emailAddress forKey:@"email"];
+    [urlParametersDict setObject:filesArray forKey:@"files"];
+    
+    NSError  *jsonError;
+    NSData   *jsonData   = [NSJSONSerialization dataWithJSONObject:urlParametersDict options:kNilOptions error:&jsonError];
+    NSString *jsonString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+    NSString *jsonStringCorrected = [jsonString stringByReplacingOccurrencesOfString:@"\\/" withString:@"/"];
+    */
+    /*
+    NSString *jsonEncrypted = [self encodeAndPrintPlainText:jsonStringCorrected
+                                                usingHexKey:key
+                                                      hexIV:password];*/
+    
+    // NSString *openSSLEncryptedString = [SQOpenSSLEncrypt encryptText:jsonStringCorrected withKey:key];
+    // NSString *aes256EncryptedString = [jsonString AES256EncryptWithKey:key];
+    
+    // NSData *aes256EncryptedData = [jsonData AES256EncryptWithKey:key];
+    // NSString *encryptedString = [aes256EncryptedData base64Encoding];
+
+    /*
+    NSString *urlString  = [NSString stringWithFormat:@"%@?json=%@", kConnectToEndpoint, openSSLEncryptedString];
+    // NSString *webStringURL = [urlString stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+    NSURL *url = [NSURL URLWithString:urlString];
+    
+    SQConnectToWebViewController *connectToWebViewController =
+    [[SQConnectToWebViewController alloc] initWithURL:url andCompletionBlock:^(BOOL success, BOOL didCancel, NSString *error) {
+        
+    }];
+    
+    UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:connectToWebViewController];
+    UIViewController *mainVC = [[[[UIApplication sharedApplication] windows] firstObject] rootViewController];
+    [mainVC presentViewController:nav animated:YES completion:nil];
+}*/
+
+/*
+- (NSString *)encodeAndPrintPlainText:(NSString *)plainText usingHexKey:(NSString *)hexKey hexIV:(NSString *)hexIV {
+    NSData *data = [plainText dataUsingEncoding:NSUTF8StringEncoding];
+    
+    NSData *encryptedPayload = [data encryptedDataWithHexKey:hexKey
+                                                       hexIV:hexIV];
+    
+    NSString *cipherText = [encryptedPayload base64EncodedStringWithOptions:0];
+    NSLog(@"Encryped Result: %@", cipherText);
+    
+    return cipherText;
+}*/
 
 
+
+#pragma mark - Registrate new account
 
 - (void)registrateAccountForEmailAddress:(NSString *)emailAddress withResult:(void(^)(NSString *error))result {
     NSString *urlString = kRegisterNewAccountEndpoint;
@@ -333,8 +373,8 @@ static NSString *filesPath      = @"/DataSourceList?all=true";
 
 
 
-#pragma mark -
-#pragma mark Reset password
+
+#pragma mark - Reset password
 
 - (void)resetPasswordForEmailAddress:(NSString *)emailAddress withResult:(void(^)(NSString *error))result {
     NSString *urlString = kResetPasswordEndpoint;
@@ -430,8 +470,8 @@ static NSString *filesPath      = @"/DataSourceList?all=true";
 
 
 
-#pragma mark -
-#pragma mark Request helpers
+
+#pragma mark - Request helpers
 
 - (int)randomInt {
     return arc4random_uniform(100);
@@ -446,6 +486,8 @@ static NSString *filesPath      = @"/DataSourceList?all=true";
     }
     return randomString;
 }
+
+
 
 
 @end
