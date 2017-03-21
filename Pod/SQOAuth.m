@@ -64,14 +64,12 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
                                  clientSecret:(NSString *)client_secret
                                   redirectUri:(NSString *)redirect_uri
                                         scope:(NSString *)scope
-                                oAuthDelegate:(id<SQAuthorizationProtocol>)oAuthDelegate
-                       viewControllerDelegate:(UIViewController *)viewControllerDelegate {
+                                delegate:(UIViewController<SQAuthorizationProtocol> *)delegate {
     
     if (client_id && client_secret && redirect_uri && scope)
         [[SQServerManager sharedInstance] registrateParametersCliendID:client_id clientSecret:client_secret redirectUri:redirect_uri scope:scope];
     
-    self.authorizationDelegate = oAuthDelegate;
-    self.viewControllerDelegate = viewControllerDelegate;
+    self.delegate = delegate;
 }
 
 
@@ -80,32 +78,31 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
 #pragma mark - authorize user
 
 - (void)authorizeUser {
-    if (!self.authorizationDelegate)  return;
-    if (!self.viewControllerDelegate) return;
+    if (!self.delegate)  return;
     
-    [self viewController:self.viewControllerDelegate showActivityIndicatorWithText:@"Authorizing user"];
-    [self.viewControllerDelegate.view setUserInteractionEnabled:NO];
+    [self viewController:self.delegate showActivityIndicatorWithText:@"Authorizing user"];
+    [self.delegate.view setUserInteractionEnabled:NO];
     
-    [[SQServerManager sharedInstance] authorizeUserForVC:self.viewControllerDelegate
+    [[SQServerManager sharedInstance] authorizeUserForVC:self.delegate
                                               withResult:^(SQToken *token, BOOL didCancel, BOOL error) {
                                                   dispatch_async(kMainQueue, ^{
                                                       
                                                       [self stopActivityIndicator];
-                                                      [self.viewControllerDelegate.view setUserInteractionEnabled:YES];
+                                                      [self.delegate.view setUserInteractionEnabled:YES];
                                                       
                                                       if (token.accessToken) {
                                                           [self.tokenStorageDelegate saveToken:token];
                                                           
-                                                          if (self.authorizationDelegate)
-                                                              [self.authorizationDelegate userIsSuccessfullyAuthorized:token];
+                                                          if (self.delegate)
+                                                              [self.delegate userIsSuccessfullyAuthorized:token];
                                                           
                                                       } else if (didCancel) {
-                                                          if (self.authorizationDelegate)
-                                                              [self.authorizationDelegate userDidCancelAuthorization];
+                                                          if (self.delegate)
+                                                              [self.delegate userDidCancelAuthorization];
                                                           
                                                       } else if (error) {
-                                                          if (self.authorizationDelegate)
-                                                              [self.authorizationDelegate userIsNotAuthorized];
+                                                          if (self.delegate)
+                                                              [self.delegate userIsNotAuthorized];
                                                       }
                                                   });
                                               }];
@@ -187,8 +184,7 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
 
 - (void)userDidSignOut {
     [self.tokenStorageDelegate eraseToken];
-    self.authorizationDelegate  = nil;
-    self.viewControllerDelegate = nil;
+    self.delegate  = nil;
 }
 
 
@@ -199,7 +195,7 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
 #pragma mark - Registrate/Reset account flow
 
 - (void)callRegisterResetAccountFlow {
-    [self.viewControllerDelegate.view setUserInteractionEnabled:NO];
+    [self.delegate.view setUserInteractionEnabled:NO];
     
     UIAlertController *registrationPopup = [UIAlertController alertControllerWithTitle:@"Registration / Reset"
                                                                                message:@"Please enter your email address"
@@ -212,9 +208,9 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
                                                                  
                                                                  UITextField *emailTextField = registrationPopup.textFields.firstObject;
                                                                  [emailTextField resignFirstResponder];
-                                                                 [self.viewControllerDelegate.view endEditing:YES];
-                                                                 [self.viewControllerDelegate.view setUserInteractionEnabled:YES];
-                                                                 [self.viewControllerDelegate dismissViewControllerAnimated:YES completion:nil];
+                                                                 [self.delegate.view endEditing:YES];
+                                                                 [self.delegate.view setUserInteractionEnabled:YES];
+                                                                 [self.delegate dismissViewControllerAnimated:YES completion:nil];
                                                              });
                                                          }];
     
@@ -223,7 +219,7 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
                                                            handler:^(UIAlertAction *action){
                                                                
                                                                UITextField *emailTextField = registrationPopup.textFields.firstObject;
-                                                               [self viewController:self.viewControllerDelegate startRegistationFlow:emailTextField.text];
+                                                               [self viewController:self.delegate startRegistationFlow:emailTextField.text];
                                                            }];
     
     UIAlertAction *resetPasswordButton = [UIAlertAction actionWithTitle:@"Reset password"
@@ -231,7 +227,7 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
                                                                 handler:^(UIAlertAction *action){
                                                                     
                                                                     UITextField *emailTextField = registrationPopup.textFields.firstObject;
-                                                                    [self viewController:self.viewControllerDelegate startResetPasswordFlow:emailTextField.text];
+                                                                    [self viewController:self.delegate startResetPasswordFlow:emailTextField.text];
                                                                 }];
     
     [registrationPopup addTextFieldWithConfigurationHandler:^(UITextField *textField) {
@@ -243,7 +239,7 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
     [registrationPopup addAction:registerButton];
     [registrationPopup addAction:resetPasswordButton];
     
-    [self.viewControllerDelegate presentViewController:registrationPopup animated:YES completion:nil];
+    [self.delegate presentViewController:registrationPopup animated:YES completion:nil];
 }
 
 

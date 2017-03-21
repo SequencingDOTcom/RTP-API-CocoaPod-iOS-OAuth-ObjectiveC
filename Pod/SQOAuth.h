@@ -13,8 +13,8 @@
 
 @interface SQOAuth : NSObject <SQTokenAccessProtocol>
 
-@property (weak, nonatomic) id<SQAuthorizationProtocol> authorizationDelegate;
-@property (weak, nonatomic) UIViewController            *viewControllerDelegate;
+@property (weak, nonatomic) UIViewController<SQAuthorizationProtocol> *delegate;
+//@property (weak, nonatomic) UIViewController            *viewControllerDelegate;
 
 
 // designated initializer
@@ -26,8 +26,7 @@
                                  clientSecret:(NSString *)client_secret
                                   redirectUri:(NSString *)redirect_uri
                                         scope:(NSString *)scope
-                                oAuthDelegate:(id<SQAuthorizationProtocol>)oAuthDelegate
-                       viewControllerDelegate:(UIViewController *)viewControllerDelegate;
+                                     delegate:(UIViewController<SQAuthorizationProtocol> *)delegate;
 
 
 // authorization method that uses SQAuthorizationProtocol as result
