@@ -139,12 +139,13 @@ You need to follow instruction below if you want to install and use OAuth logic 
 		``` 
 		
 		where:
+		```
 		client_id - your app CLIENT_ID
 		client_secret - your app CLIENT_SECRET
 		redirect_uri - your app REDIRECT_URI
 		scope - your app SCOPE
 		delegate - UIViewController instance that conform to "SQAuthorizationProtocol" protocol
-
+		```
 
 
 * **Use authorization method**		
