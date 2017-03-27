@@ -43,67 +43,66 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
 - (void)importFrom23AndMeWithToken:(id<SQTokenAccessProtocol>)tokenProvider viewControllerDelegate:(UIViewController *)controller {
     if (!controller) {
         UIViewController *mainVC = [[[[UIApplication sharedApplication] windows] firstObject] rootViewController];
-        [self viewController:mainVC showAlertWithTitle:@"Authorization error" withMessage:@"UI delegate is missing. Please provide UI delegate"];
+        [self viewController:mainVC showAlertWithTitle:@"23andMe files import" withMessage:@"UI delegate is missing. Please provide UI delegate"];
         return;
     }
     self.viewController = controller;
     
     [tokenProvider token:^(SQToken *token, NSString *accessToken) {
         dispatch_async(kMainQueue, ^{
-            if (accessToken || [accessToken length] > 0) {
-                
-                self.token = accessToken;
-                [controller.view setUserInteractionEnabled:NO];
-                
-                UIAlertController *authorizationPopup = [UIAlertController alertControllerWithTitle:@"23andMe files import"
-                                                                                            message:@"Please provide your credentials to authorize"
-                                                                                     preferredStyle:UIAlertControllerStyleAlert];
-                
-                UIAlertAction *cancelButton = [UIAlertAction actionWithTitle:@"Cancel"
-                                                                       style:UIAlertActionStyleCancel
-                                                                     handler:^(UIAlertAction *action){
-                                                                         dispatch_async(kMainQueue, ^{
-                                                                             UITextField *loginTextField = authorizationPopup.textFields.firstObject;
-                                                                             [loginTextField resignFirstResponder];
-                                                                             UITextField *passwordTextField = authorizationPopup.textFields.lastObject;
-                                                                             [passwordTextField resignFirstResponder];
-                                                                             
-                                                                             [controller.view endEditing:YES];
-                                                                             [controller.view setUserInteractionEnabled:YES];
-                                                                             [controller dismissViewControllerAnimated:YES completion:nil];
-                                                                         });
-                                                                     }];
-                
-                UIAlertAction *authorizeButton = [UIAlertAction actionWithTitle:@"Authorize"
-                                                                          style:UIAlertActionStyleDefault
-                                                                        handler:^(UIAlertAction *action){
-                                                                            UITextField *loginTextField    = authorizationPopup.textFields.firstObject;
-                                                                            UITextField *passwordTextField = authorizationPopup.textFields.lastObject;
-                                                                            
-                                                                            [self viewController:controller authorize23andMeWithLogin:loginTextField.text password:passwordTextField.text token:accessToken];
-                                                                        }];
-                
-                [authorizationPopup addTextFieldWithConfigurationHandler:^(UITextField *textField) {
-                    [textField setKeyboardType:UIKeyboardTypeEmailAddress];
-                    textField.placeholder = @"enter login";
-                    textField.clearButtonMode = UITextFieldViewModeWhileEditing;
-                }];
-                
-                [authorizationPopup addTextFieldWithConfigurationHandler:^(UITextField *textField) {
-                    [textField setKeyboardType:UIKeyboardTypeDefault];
-                    textField.placeholder = @"enter password";
-                    textField.secureTextEntry = YES;
-                    textField.clearButtonMode = UITextFieldViewModeWhileEditing;
-                }];
-                
-                [authorizationPopup addAction:cancelButton];
-                [authorizationPopup addAction:authorizeButton];
-                [controller presentViewController:authorizationPopup animated:YES completion:nil];
-                
-            } else {
-                [self viewController:controller showAlertWithTitle:@"Authorization error" withMessage:@"User token is empty. Please reauthorize."];
+            if (!accessToken || [accessToken length] == 0) {
+                [self viewController:controller showAlertWithTitle:@"23andMe files import" withMessage:@"User token is empty. Please reauthorize."];
                 [controller.view setUserInteractionEnabled:YES];
+                return;
             }
+            
+            self.token = accessToken;
+            [controller.view setUserInteractionEnabled:NO];
+            
+            UIAlertController *authorizationPopup = [UIAlertController alertControllerWithTitle:@"23andMe files import"
+                                                                                        message:@"Please provide your credentials to authorize"
+                                                                                 preferredStyle:UIAlertControllerStyleAlert];
+            
+            UIAlertAction *cancelButton = [UIAlertAction actionWithTitle:@"Cancel"
+                                                                   style:UIAlertActionStyleCancel
+                                                                 handler:^(UIAlertAction *action){
+                                                                     dispatch_async(kMainQueue, ^{
+                                                                         UITextField *loginTextField = authorizationPopup.textFields.firstObject;
+                                                                         [loginTextField resignFirstResponder];
+                                                                         UITextField *passwordTextField = authorizationPopup.textFields.lastObject;
+                                                                         [passwordTextField resignFirstResponder];
+                                                                         
+                                                                         [controller.view endEditing:YES];
+                                                                         [controller.view setUserInteractionEnabled:YES];
+                                                                         [controller dismissViewControllerAnimated:YES completion:nil];
+                                                                     });
+                                                                 }];
+            
+            UIAlertAction *authorizeButton = [UIAlertAction actionWithTitle:@"Authorize"
+                                                                      style:UIAlertActionStyleDefault
+                                                                    handler:^(UIAlertAction *action){
+                                                                        UITextField *loginTextField    = authorizationPopup.textFields.firstObject;
+                                                                        UITextField *passwordTextField = authorizationPopup.textFields.lastObject;
+                                                                        
+                                                                        [self viewController:controller authorize23andMeWithLogin:loginTextField.text password:passwordTextField.text token:accessToken];
+                                                                    }];
+            
+            [authorizationPopup addTextFieldWithConfigurationHandler:^(UITextField *textField) {
+                [textField setKeyboardType:UIKeyboardTypeEmailAddress];
+                textField.placeholder = @"enter login";
+                textField.clearButtonMode = UITextFieldViewModeWhileEditing;
+            }];
+            
+            [authorizationPopup addTextFieldWithConfigurationHandler:^(UITextField *textField) {
+                [textField setKeyboardType:UIKeyboardTypeDefault];
+                textField.placeholder = @"enter password";
+                textField.secureTextEntry = YES;
+                textField.clearButtonMode = UITextFieldViewModeWhileEditing;
+            }];
+            
+            [authorizationPopup addAction:cancelButton];
+            [authorizationPopup addAction:authorizeButton];
+            [controller presentViewController:authorizationPopup animated:YES completion:nil];
         });
     }];
 }
@@ -112,7 +111,7 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
 - (void)viewController:(UIViewController *)controller authorize23andMeWithLogin:(NSString *)login password:(NSString *)password token:(NSString *)token {
     if (!login || [login length] == 0) {
         [self viewController:controller
-          showAlertWithTitle:@"Authorization error"
+          showAlertWithTitle:@"23andMe files import"
                  withMessage:@"Login is empty. Please provide valid login."];
         [controller.view setUserInteractionEnabled:YES];
         return;
@@ -120,7 +119,7 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
     
     if (!password || [password length] == 0) {
         [self viewController:controller
-          showAlertWithTitle:@"Authorization error"
+          showAlertWithTitle:@"23andMe files import"
                  withMessage:@"Password is empty. Please provide valid Password."];
         [controller.view setUserInteractionEnabled:YES];
         return;
@@ -128,7 +127,7 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
     
     if (!token || [token length] == 0) {
         [self viewController:controller
-          showAlertWithTitle:@"Authorization error"
+          showAlertWithTitle:@"23andMe files import"
                  withMessage:@"User token is empty. Please reauthorize."];
         [controller.view setUserInteractionEnabled:YES];
         return;
@@ -152,7 +151,7 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
     
     if (!sessionId || [sessionId length] == 0 || !token || [token length] == 0) {
         [self viewController:controller
-          showAlertWithTitle:@"Security question error"
+          showAlertWithTitle:@"23andMe security question error"
                  withMessage:@"Your sessionId/token are empty. Please reauthorize."];
         [controller.view setUserInteractionEnabled:YES];
         return;
@@ -174,7 +173,7 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
         [self stopActivityIndicator];
         [self.viewController.view setUserInteractionEnabled:YES];
         [[SQ3rdPartyImportHelper sharedInstance] setMe23Delegate:nil];
-        [self viewController:self.viewController showAlertWithTitle:@"Import request success" withMessage:@"Genetic file(s) import sucessfully started."];
+        [self viewController:self.viewController showAlertWithTitle:@"23andMe files import" withMessage:@"Genetic file(s) import sucessfully started."];
     });
 }
 
@@ -184,7 +183,7 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
         [self stopActivityIndicator];
         [self.viewController.view setUserInteractionEnabled:YES];
         [[SQ3rdPartyImportHelper sharedInstance] setMe23Delegate:nil];
-        [self viewController:self.viewController showAlertWithTitle:@"Import request error" withMessage:@"Sorry, invalid credentials were entered. Please provide valid credentials."];
+        [self viewController:self.viewController showAlertWithTitle:@"23andMe files import" withMessage:@"Sorry, invalid credentials were entered. Please provide valid credentials."];
     });
 }
 
@@ -195,7 +194,7 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
         [[SQ3rdPartyImportHelper sharedInstance] setMe23Delegate:nil];
         NSString *question = adjustedQuestion ? adjustedQuestion : [NSString stringWithFormat:@"\"%@\"", originQuestion];
         
-        UIAlertController *securityQuestionPopup = [UIAlertController alertControllerWithTitle:@"Security question"
+        UIAlertController *securityQuestionPopup = [UIAlertController alertControllerWithTitle:@"23andMe security question"
                                                                                        message:question
                                                                                 preferredStyle:UIAlertControllerStyleAlert];
         
@@ -242,7 +241,7 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
         [self stopActivityIndicator];
         [self.viewController.view setUserInteractionEnabled:YES];
         [[SQ3rdPartyImportHelper sharedInstance] setMe23Delegate:nil];
-        [self viewController:self.viewController showAlertWithTitle:@"Import request error" withMessage:@"Sorry, there is a temporary server error. Please try later."];
+        [self viewController:self.viewController showAlertWithTitle:@"23andMe files import" withMessage:@"Sorry, there is a temporary server error. Please try later."];
     });
 }
 
@@ -252,7 +251,7 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
         [self stopActivityIndicator];
         [self.viewController.view setUserInteractionEnabled:YES];
         [[SQ3rdPartyImportHelper sharedInstance] setMe23Delegate:nil];
-        [self viewController:self.viewController showAlertWithTitle:@"Import request error" withMessage:@"Invalid security answer provided."];
+        [self viewController:self.viewController showAlertWithTitle:@"23andMe files import" withMessage:@"Invalid security answer provided."];
     });
 }
 
@@ -267,67 +266,66 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
 - (void)importFromAncestryWithToken:(id<SQTokenAccessProtocol>)tokenProvider viewControllerDelegate:(UIViewController *)controller {
     if (!controller) {
         UIViewController *mainVC = [[[[UIApplication sharedApplication] windows] firstObject] rootViewController];
-        [self viewController:mainVC showAlertWithTitle:@"Authorization error" withMessage:@"UI delegate is missing. Please provide UI delegate"];
+        [self viewController:mainVC showAlertWithTitle:@"Ancestry files import" withMessage:@"UI delegate is missing. Please provide UI delegate"];
         return;
     }
     self.viewController = controller;
     
     [tokenProvider token:^(SQToken *token, NSString *accessToken) {
         dispatch_async(kMainQueue, ^{
-            if (accessToken || [accessToken length] > 0) {
-                
-                self.token = accessToken;
-                [controller.view setUserInteractionEnabled:NO];
-                
-                UIAlertController *authorizationPopup = [UIAlertController alertControllerWithTitle:@"Ancestry files import"
-                                                                                            message:@"Please provide your credentials to authorize"
-                                                                                     preferredStyle:UIAlertControllerStyleAlert];
-                
-                UIAlertAction *cancelButton = [UIAlertAction actionWithTitle:@"Cancel"
-                                                                       style:UIAlertActionStyleCancel
-                                                                     handler:^(UIAlertAction *action){
-                                                                         dispatch_async(kMainQueue, ^{
-                                                                             UITextField *loginTextField = authorizationPopup.textFields.firstObject;
-                                                                             [loginTextField resignFirstResponder];
-                                                                             UITextField *passwordTextField = authorizationPopup.textFields.lastObject;
-                                                                             [passwordTextField resignFirstResponder];
-                                                                             
-                                                                             [controller.view endEditing:YES];
-                                                                             [controller.view setUserInteractionEnabled:YES];
-                                                                             [controller dismissViewControllerAnimated:YES completion:nil];
-                                                                         });
-                                                                     }];
-                
-                UIAlertAction *authorizeButton = [UIAlertAction actionWithTitle:@"Authorize"
-                                                                          style:UIAlertActionStyleDefault
-                                                                        handler:^(UIAlertAction *action){
-                                                                            UITextField *loginTextField    = authorizationPopup.textFields.firstObject;
-                                                                            UITextField *passwordTextField = authorizationPopup.textFields.lastObject;
-                                                                            
-                                                                            [self viewController:controller authorizeAncestryWithLogin:loginTextField.text password:passwordTextField.text token:accessToken];
-                                                                        }];
-                
-                [authorizationPopup addTextFieldWithConfigurationHandler:^(UITextField *textField) {
-                    [textField setKeyboardType:UIKeyboardTypeEmailAddress];
-                    textField.placeholder = @"enter login";
-                    textField.clearButtonMode = UITextFieldViewModeWhileEditing;
-                }];
-                
-                [authorizationPopup addTextFieldWithConfigurationHandler:^(UITextField *textField) {
-                    [textField setKeyboardType:UIKeyboardTypeDefault];
-                    textField.placeholder = @"enter password";
-                    textField.secureTextEntry = YES;
-                    textField.clearButtonMode = UITextFieldViewModeWhileEditing;
-                }];
-                
-                [authorizationPopup addAction:cancelButton];
-                [authorizationPopup addAction:authorizeButton];
-                [controller presentViewController:authorizationPopup animated:YES completion:nil];
-                
-            } else {
-                [self viewController:controller showAlertWithTitle:@"Authorization error" withMessage:@"User token is empty. Please reauthorize."];
+            if (!accessToken || [accessToken length] == 0) {
+                [self viewController:controller showAlertWithTitle:@"Ancestry files import" withMessage:@"User token is empty. Please reauthorize."];
                 [controller.view setUserInteractionEnabled:YES];
+                return;
             }
+            
+            self.token = accessToken;
+            [controller.view setUserInteractionEnabled:NO];
+            
+            UIAlertController *authorizationPopup = [UIAlertController alertControllerWithTitle:@"Ancestry files import"
+                                                                                        message:@"Please provide your credentials to authorize"
+                                                                                 preferredStyle:UIAlertControllerStyleAlert];
+            
+            UIAlertAction *cancelButton = [UIAlertAction actionWithTitle:@"Cancel"
+                                                                   style:UIAlertActionStyleCancel
+                                                                 handler:^(UIAlertAction *action){
+                                                                     dispatch_async(kMainQueue, ^{
+                                                                         UITextField *loginTextField = authorizationPopup.textFields.firstObject;
+                                                                         [loginTextField resignFirstResponder];
+                                                                         UITextField *passwordTextField = authorizationPopup.textFields.lastObject;
+                                                                         [passwordTextField resignFirstResponder];
+                                                                         
+                                                                         [controller.view endEditing:YES];
+                                                                         [controller.view setUserInteractionEnabled:YES];
+                                                                         [controller dismissViewControllerAnimated:YES completion:nil];
+                                                                     });
+                                                                 }];
+            
+            UIAlertAction *authorizeButton = [UIAlertAction actionWithTitle:@"Authorize"
+                                                                      style:UIAlertActionStyleDefault
+                                                                    handler:^(UIAlertAction *action){
+                                                                        UITextField *loginTextField    = authorizationPopup.textFields.firstObject;
+                                                                        UITextField *passwordTextField = authorizationPopup.textFields.lastObject;
+                                                                        
+                                                                        [self viewController:controller authorizeAncestryWithLogin:loginTextField.text password:passwordTextField.text token:accessToken];
+                                                                    }];
+            
+            [authorizationPopup addTextFieldWithConfigurationHandler:^(UITextField *textField) {
+                [textField setKeyboardType:UIKeyboardTypeEmailAddress];
+                textField.placeholder = @"enter login";
+                textField.clearButtonMode = UITextFieldViewModeWhileEditing;
+            }];
+            
+            [authorizationPopup addTextFieldWithConfigurationHandler:^(UITextField *textField) {
+                [textField setKeyboardType:UIKeyboardTypeDefault];
+                textField.placeholder = @"enter password";
+                textField.secureTextEntry = YES;
+                textField.clearButtonMode = UITextFieldViewModeWhileEditing;
+            }];
+            
+            [authorizationPopup addAction:cancelButton];
+            [authorizationPopup addAction:authorizeButton];
+            [controller presentViewController:authorizationPopup animated:YES completion:nil];
         });
     }];
 }
@@ -337,7 +335,7 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
 - (void)viewController:(UIViewController *)controller authorizeAncestryWithLogin:(NSString *)login password:(NSString *)password token:(NSString *)token {
     if (!login || [login length] == 0) {
         [self viewController:controller
-          showAlertWithTitle:@"Authorization error"
+          showAlertWithTitle:@"Ancestry files import"
                  withMessage:@"Login is empty. Please provide valid login."];
         [controller.view setUserInteractionEnabled:YES];
         return;
@@ -345,7 +343,7 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
     
     if (!password || [password length] == 0) {
         [self viewController:controller
-          showAlertWithTitle:@"Authorization error"
+          showAlertWithTitle:@"Ancestry files import"
                  withMessage:@"Password is empty. Please provide valid Password."];
         [controller.view setUserInteractionEnabled:YES];
         return;
@@ -353,7 +351,7 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
     
     if (!token || [token length] == 0) {
         [self viewController:controller
-          showAlertWithTitle:@"Authorization error"
+          showAlertWithTitle:@"Ancestry files import"
                  withMessage:@"User token is empty. Please reauthorize."];
         [controller.view setUserInteractionEnabled:YES];
         return;
@@ -376,7 +374,7 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
     
     if (!sessionId || [sessionId length] == 0 || !token || [token length] == 0) {
         [self viewController:controller
-          showAlertWithTitle:@"Ancestry import error"
+          showAlertWithTitle:@"Ancestry files import"
                  withMessage:@"Your sessionId/token are empty. Please reauthorize."];
         [controller.view setUserInteractionEnabled:YES];
         return;
@@ -399,7 +397,7 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
         [self.viewController.view setUserInteractionEnabled:YES];
         [[SQ3rdPartyImportHelper sharedInstance] setAncestryDelegate:nil];
         
-        UIAlertController *urlPopup = [UIAlertController alertControllerWithTitle:@"URL for file import"
+        UIAlertController *urlPopup = [UIAlertController alertControllerWithTitle:@"Ancestry files import"
                                                                           message:(text ? text : @"Please provide URL from email")
                                                                    preferredStyle:UIAlertControllerStyleAlert];
         
@@ -444,7 +442,7 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
         [self stopActivityIndicator];
         [self.viewController.view setUserInteractionEnabled:YES];
         [[SQ3rdPartyImportHelper sharedInstance] setAncestryDelegate:nil];
-        [self viewController:self.viewController showAlertWithTitle:@"Import request error" withMessage:@"Sorry, invalid credentials were entered. Please provide valid credentials."];
+        [self viewController:self.viewController showAlertWithTitle:@"Ancestry files import" withMessage:@"Sorry, invalid credentials were entered. Please provide valid credentials."];
     });
 }
 
@@ -454,7 +452,7 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
         [self stopActivityIndicator];
         [self.viewController.view setUserInteractionEnabled:YES];
         [[SQ3rdPartyImportHelper sharedInstance] setAncestryDelegate:nil];
-        [self viewController:self.viewController showAlertWithTitle:@"Import request error" withMessage:@"Sorry, there is a temporary server error. Please try later."];
+        [self viewController:self.viewController showAlertWithTitle:@"Ancestry files import" withMessage:@"Sorry, there is a temporary server error. Please try later."];
     });
 }
 
@@ -464,7 +462,7 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
         [self stopActivityIndicator];
         [self.viewController.view setUserInteractionEnabled:YES];
         [[SQ3rdPartyImportHelper sharedInstance] setAncestryDelegate:nil];
-        [self viewController:self.viewController showAlertWithTitle:@"Import request success" withMessage:@"Genetic file(s) import sucessfully started."];
+        [self viewController:self.viewController showAlertWithTitle:@"Ancestry files import" withMessage:@"Genetic file(s) import sucessfully started."];
     });
 }
 
@@ -474,7 +472,7 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
         [self stopActivityIndicator];
         [self.viewController.view setUserInteractionEnabled:YES];
         [[SQ3rdPartyImportHelper sharedInstance] setAncestryDelegate:nil];
-        [self viewController:self.viewController showAlertWithTitle:@"Import request error" withMessage:@"Invalid URL was provided."];
+        [self viewController:self.viewController showAlertWithTitle:@"Ancestry files import" withMessage:@"Invalid URL was provided."];
     });
 }
 

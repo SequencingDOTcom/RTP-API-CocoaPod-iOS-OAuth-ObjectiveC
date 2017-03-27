@@ -10,6 +10,6 @@
 
 @protocol SQTokenAccessProtocol <NSObject>
 
-- (void)token:(void(^)(SQToken *token))tokenResult;
+- (void)token:(void(^)(SQToken *token, NSString *accessToken))tokenResult;
 
 @end
