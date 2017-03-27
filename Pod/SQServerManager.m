@@ -6,15 +6,11 @@
 
 #import "SQServerManager.h"
 #import "SQLoginWebViewController.h"
-// #import "SQConnectToWebViewController.h"
 #import "SQToken.h"
 #import "SQHttpHelper.h"
 #import "SQRequestHelper.h"
-// #import "SQOpenSSLEncrypt.h"
-// #import "NSString+AESCrypt.h"
-// #import "NSData+AESCrypt.h"
-// #import "NSData+AES256Encryption.h"
-
+#import "SQConnectToWebViewController.h"
+#import "SQEncryptionHelper.h"
 
 
 // parameters for authorization request
@@ -38,7 +34,7 @@ static NSString *filesPath      = @"/DataSourceList?all=true";
 
 
 // registrate new account endpoint
-// #define kConnectToEndpoint          @"http://sequencing.com/connect"
+#define kConnectToEndpoint          @"http://sequencing.com/connect"
 
 // registrate new account endpoint
 #define kRegisterNewAccountEndpoint @"https://sequencing.com/indexApi.php?q=sequencing/public/webservice/user/seq_register.json"
@@ -51,6 +47,9 @@ static NSString *filesPath      = @"/DataSourceList?all=true";
 #define VALID_STATUS_CODES @[@(200), @(301), @(302)]
 
 #define INVALID_SERVER_RESPONSE @"We are sorry as this app is experiencing a temporary issue.\nPlease try again in a few minutes."
+
+
+#define kInitEncryptionVector   @"3n3CrwwnzMqxOssv"
 
 
 
@@ -99,8 +98,7 @@ static NSString *filesPath      = @"/DataSourceList?all=true";
 
 #pragma mark - Authorization
 
-- (void)authorizeUserForVC:(UIViewController *)controller
-                withResult:(void (^)(SQToken *token, BOOL didCancel, BOOL error))result {
+- (void)authorizeUserForVC:(UIViewController *)controller withResult:(void (^)(SQToken *token, BOOL didCancel, BOOL error))result {
     
     NSString *randomState = [self randomStringWithLength:[self randomInt]];
     NSString *client_id_upd = [self.client_id stringByAddingPercentEncodingWithAllowedCharacters:NSCharacterSet.URLQueryAllowedCharacterSet];
@@ -146,10 +144,8 @@ static NSString *filesPath      = @"/DataSourceList?all=true";
     }];
     
     UINavigationController *navWebView = [[UINavigationController alloc] initWithRootViewController:loginWebViewController];
-    // UIViewController *mainVC = [[[[UIApplication sharedApplication] windows] firstObject] rootViewController];
     [controller presentViewController:navWebView animated:YES completion:nil];
 }
-
 
 
 
@@ -256,71 +252,6 @@ static NSString *filesPath      = @"/DataSourceList?all=true";
                             }];
 }
 
-
-
-
-/*
-#pragma mark - Connect to request
-
-- (void)connectToSequencingWithClient_id:(NSString *)client_id
-                               userEmail:(NSString *)emailAddress
-                                   files:(NSArray *)filesArray
-                             redirectURI:(NSArray *)redirect_uri
-                              withResult:(void(^)(BOOL success, BOOL didCancel, NSString *error))result {
-    
-    NSString *key = @"3n3CrwwnzMqxOssv";
-    NSString *password = @"p5-buv9JA5EbFr55BELvtTmsVhZnFaCAhjUjQufV2fl6NhJGav_YkSuDklT7jL4j04tC3Uaec892W93GeeJHLA";
-    
-    
-    NSMutableDictionary *urlParametersDict = [[NSMutableDictionary alloc] init];
-    NSString *client_id_encoded = [client_id stringByAddingPercentEncodingWithAllowedCharacters:NSCharacterSet.URLQueryAllowedCharacterSet];
-    [urlParametersDict setObject:client_id_encoded forKey:@"client_id"];
-    [urlParametersDict setObject:emailAddress forKey:@"email"];
-    [urlParametersDict setObject:filesArray forKey:@"files"];
-    
-    NSError  *jsonError;
-    NSData   *jsonData   = [NSJSONSerialization dataWithJSONObject:urlParametersDict options:kNilOptions error:&jsonError];
-    NSString *jsonString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
-    NSString *jsonStringCorrected = [jsonString stringByReplacingOccurrencesOfString:@"\\/" withString:@"/"];
-    */
-    /*
-    NSString *jsonEncrypted = [self encodeAndPrintPlainText:jsonStringCorrected
-                                                usingHexKey:key
-                                                      hexIV:password];*/
-    
-    // NSString *openSSLEncryptedString = [SQOpenSSLEncrypt encryptText:jsonStringCorrected withKey:key];
-    // NSString *aes256EncryptedString = [jsonString AES256EncryptWithKey:key];
-    
-    // NSData *aes256EncryptedData = [jsonData AES256EncryptWithKey:key];
-    // NSString *encryptedString = [aes256EncryptedData base64Encoding];
-
-    /*
-    NSString *urlString  = [NSString stringWithFormat:@"%@?json=%@", kConnectToEndpoint, openSSLEncryptedString];
-    // NSString *webStringURL = [urlString stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
-    NSURL *url = [NSURL URLWithString:urlString];
-    
-    SQConnectToWebViewController *connectToWebViewController =
-    [[SQConnectToWebViewController alloc] initWithURL:url andCompletionBlock:^(BOOL success, BOOL didCancel, NSString *error) {
-        
-    }];
-    
-    UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:connectToWebViewController];
-    UIViewController *mainVC = [[[[UIApplication sharedApplication] windows] firstObject] rootViewController];
-    [mainVC presentViewController:nav animated:YES completion:nil];
-}*/
-
-/*
-- (NSString *)encodeAndPrintPlainText:(NSString *)plainText usingHexKey:(NSString *)hexKey hexIV:(NSString *)hexIV {
-    NSData *data = [plainText dataUsingEncoding:NSUTF8StringEncoding];
-    
-    NSData *encryptedPayload = [data encryptedDataWithHexKey:hexKey
-                                                       hexIV:hexIV];
-    
-    NSString *cipherText = [encryptedPayload base64EncodedStringWithOptions:0];
-    NSLog(@"Encryped Result: %@", cipherText);
-    
-    return cipherText;
-}*/
 
 
 
@@ -466,6 +397,43 @@ static NSString *filesPath      = @"/DataSourceList?all=true";
             return INVALID_SERVER_RESPONSE;
             break;
     }
+}
+
+
+
+
+#pragma mark - Connect to request
+
+- (void)connectToSequencingWithClient_id:(NSString *)client_id
+                               userEmail:(NSString *)emailAddress
+                              filesArray:(NSArray *)filesArray
+                  viewControllerDelegate:(UIViewController *)controller {
+    
+    NSMutableDictionary *urlParametersDict = [[NSMutableDictionary alloc] init];
+    [urlParametersDict setObject:client_id    forKey:@"client_id"];
+    [urlParametersDict setObject:emailAddress forKey:@"email"];
+    [urlParametersDict setObject:filesArray   forKey:@"files"];
+    
+    NSString *key = client_id;
+    NSString *iv  = kInitEncryptionVector;
+    
+    NSString *encryptedString = [SQEncryptionHelper encryptAES256ForParameters:urlParametersDict key:key iv:iv];
+    NSString *encryptedJsonURLEncoded = [SQEncryptionHelper urlEncodeForString:encryptedString];
+    
+    NSString *md5Key = [SQEncryptionHelper md5forString:client_id];
+    
+    NSString *urlString  = [NSString stringWithFormat:@"%@?c=%@&json=%@", kConnectToEndpoint, md5Key, encryptedJsonURLEncoded];
+    NSURL    *url = [NSURL URLWithString:urlString];
+    
+    SQConnectToWebViewController *connectToWebViewController =
+    [[SQConnectToWebViewController alloc] initWithURL:url andCompletionBlock:^(BOOL success, BOOL didCancel, NSString *error) {
+        dispatch_async(kMainQueue, ^{
+            [controller.view setUserInteractionEnabled:YES];
+        });
+    }];
+    
+    UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:connectToWebViewController];
+    [controller presentViewController:nav animated:YES completion:nil];
 }
 
 
