@@ -9,14 +9,14 @@
 Pod::Spec.new do |s|
 
   s.name         = "sequencing-oauth-api-objc"
-  s.version      = “2.0.2”
+  s.version      = "2.0.2"
   s.summary      = "oAuth2 authentication implementation for Sequencing.com's API in Objective-C"
   s.homepage     = "https://github.com/SequencingDOTcom/CocoaPod-iOS-OAuth-ObjectiveC"
   s.license      = { :type => "MIT", :file => "LICENSE" }
   s.author       = { "Sequencing" => "gittaca@sequencing.com" }
   s.source       = { 
   :git => "https://github.com/SequencingDOTcom/CocoaPod-iOS-OAuth-ObjectiveC.git", 
-  :tag => “2.0.2” 
+  :tag => "2.0.2"
   }
   s.platform     = :ios, '8.0'
   s.source_files = 'Pod', 'Pod/**/*.{h,m}'  
