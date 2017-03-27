@@ -152,7 +152,7 @@
 {
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        srand(time(NULL));
+        srand((int)time(NULL));
     });
 
     char cIv[FBENCRYPT_BLOCK_SIZE];
