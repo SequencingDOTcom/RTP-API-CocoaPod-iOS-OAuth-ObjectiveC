@@ -1,5 +1,5 @@
 //
-//  SQ3rdPartyImportAPI.h
+//  SQ3rdPartyImport.m
 //  Copyright © 2017 Sequencing.com. All rights reserved
 //
 
@@ -50,62 +50,60 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
     
     [tokenProvider token:^(SQToken *token, NSString *accessToken) {
         dispatch_async(kMainQueue, ^{
-            
-            if (!accessToken || [accessToken length] == 0) {
-                [self viewController:controller
-                  showAlertWithTitle:@"Authorization error"
-                         withMessage:@"User token is empty. Please reauthorize."];
+            if (accessToken || [accessToken length] > 0) {
+                
+                self.token = accessToken;
+                [controller.view setUserInteractionEnabled:NO];
+                
+                UIAlertController *authorizationPopup = [UIAlertController alertControllerWithTitle:@"23andMe files import"
+                                                                                            message:@"Please provide your credentials to authorize"
+                                                                                     preferredStyle:UIAlertControllerStyleAlert];
+                
+                UIAlertAction *cancelButton = [UIAlertAction actionWithTitle:@"Cancel"
+                                                                       style:UIAlertActionStyleCancel
+                                                                     handler:^(UIAlertAction *action){
+                                                                         dispatch_async(kMainQueue, ^{
+                                                                             UITextField *loginTextField = authorizationPopup.textFields.firstObject;
+                                                                             [loginTextField resignFirstResponder];
+                                                                             UITextField *passwordTextField = authorizationPopup.textFields.lastObject;
+                                                                             [passwordTextField resignFirstResponder];
+                                                                             
+                                                                             [controller.view endEditing:YES];
+                                                                             [controller.view setUserInteractionEnabled:YES];
+                                                                             [controller dismissViewControllerAnimated:YES completion:nil];
+                                                                         });
+                                                                     }];
+                
+                UIAlertAction *authorizeButton = [UIAlertAction actionWithTitle:@"Authorize"
+                                                                          style:UIAlertActionStyleDefault
+                                                                        handler:^(UIAlertAction *action){
+                                                                            UITextField *loginTextField    = authorizationPopup.textFields.firstObject;
+                                                                            UITextField *passwordTextField = authorizationPopup.textFields.lastObject;
+                                                                            
+                                                                            [self viewController:controller authorize23andMeWithLogin:loginTextField.text password:passwordTextField.text token:accessToken];
+                                                                        }];
+                
+                [authorizationPopup addTextFieldWithConfigurationHandler:^(UITextField *textField) {
+                    [textField setKeyboardType:UIKeyboardTypeEmailAddress];
+                    textField.placeholder = @"enter login";
+                    textField.clearButtonMode = UITextFieldViewModeWhileEditing;
+                }];
+                
+                [authorizationPopup addTextFieldWithConfigurationHandler:^(UITextField *textField) {
+                    [textField setKeyboardType:UIKeyboardTypeDefault];
+                    textField.placeholder = @"enter password";
+                    textField.secureTextEntry = YES;
+                    textField.clearButtonMode = UITextFieldViewModeWhileEditing;
+                }];
+                
+                [authorizationPopup addAction:cancelButton];
+                [authorizationPopup addAction:authorizeButton];
+                [controller presentViewController:authorizationPopup animated:YES completion:nil];
+                
+            } else {
+                [self viewController:controller showAlertWithTitle:@"Authorization error" withMessage:@"User token is empty. Please reauthorize."];
                 [controller.view setUserInteractionEnabled:YES];
-                return;
             }
-            
-            self.token = accessToken;
-            [controller.view setUserInteractionEnabled:NO];
-            
-            UIAlertController *authorizationPopup = [UIAlertController alertControllerWithTitle:@"23andMe files import"
-                                                                                        message:@"Please provide your credentials to authorize"
-                                                                                 preferredStyle:UIAlertControllerStyleAlert];
-            
-            UIAlertAction *cancelButton = [UIAlertAction actionWithTitle:@"Cancel"
-                                                                   style:UIAlertActionStyleCancel
-                                                                 handler:^(UIAlertAction *action){
-                                                                     dispatch_async(kMainQueue, ^{
-                                                                         UITextField *loginTextField = authorizationPopup.textFields.firstObject;
-                                                                         [loginTextField resignFirstResponder];
-                                                                         UITextField *passwordTextField = authorizationPopup.textFields.lastObject;
-                                                                         [passwordTextField resignFirstResponder];
-                                                                         
-                                                                         [controller.view endEditing:YES];
-                                                                         [controller.view setUserInteractionEnabled:YES];
-                                                                         [controller dismissViewControllerAnimated:YES completion:nil];
-                                                                     });
-                                                                 }];
-            
-            UIAlertAction *authorizeButton = [UIAlertAction actionWithTitle:@"Authorize"
-                                                                      style:UIAlertActionStyleDefault
-                                                                    handler:^(UIAlertAction *action){
-                                                                        UITextField *loginTextField    = authorizationPopup.textFields.firstObject;
-                                                                        UITextField *passwordTextField = authorizationPopup.textFields.lastObject;
-                                                                        
-                                                                        [self viewController:controller authorize23andMeWithLogin:loginTextField.text password:passwordTextField.text token:accessToken];
-                                                                    }];
-            
-            [authorizationPopup addTextFieldWithConfigurationHandler:^(UITextField *textField) {
-                [textField setKeyboardType:UIKeyboardTypeEmailAddress];
-                textField.placeholder = @"enter login";
-                textField.clearButtonMode = UITextFieldViewModeWhileEditing;
-            }];
-            
-            [authorizationPopup addTextFieldWithConfigurationHandler:^(UITextField *textField) {
-                [textField setKeyboardType:UIKeyboardTypeDefault];
-                textField.placeholder = @"enter password";
-                textField.secureTextEntry = YES;
-                textField.clearButtonMode = UITextFieldViewModeWhileEditing;
-            }];
-            
-            [authorizationPopup addAction:cancelButton];
-            [authorizationPopup addAction:authorizeButton];
-            [controller presentViewController:authorizationPopup animated:YES completion:nil];
         });
     }];
 }
@@ -276,63 +274,60 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
     
     [tokenProvider token:^(SQToken *token, NSString *accessToken) {
         dispatch_async(kMainQueue, ^{
-            
-            if (!accessToken || [accessToken length] == 0) {
-                [self viewController:controller
-                  showAlertWithTitle:@"Authorization error"
-                         withMessage:@"User token is empty. Please reauthorize."];
+            if (accessToken || [accessToken length] > 0) {
+                
+                self.token = accessToken;
+                [controller.view setUserInteractionEnabled:NO];
+                
+                UIAlertController *authorizationPopup = [UIAlertController alertControllerWithTitle:@"Ancestry files import"
+                                                                                            message:@"Please provide your credentials to authorize"
+                                                                                     preferredStyle:UIAlertControllerStyleAlert];
+                
+                UIAlertAction *cancelButton = [UIAlertAction actionWithTitle:@"Cancel"
+                                                                       style:UIAlertActionStyleCancel
+                                                                     handler:^(UIAlertAction *action){
+                                                                         dispatch_async(kMainQueue, ^{
+                                                                             UITextField *loginTextField = authorizationPopup.textFields.firstObject;
+                                                                             [loginTextField resignFirstResponder];
+                                                                             UITextField *passwordTextField = authorizationPopup.textFields.lastObject;
+                                                                             [passwordTextField resignFirstResponder];
+                                                                             
+                                                                             [controller.view endEditing:YES];
+                                                                             [controller.view setUserInteractionEnabled:YES];
+                                                                             [controller dismissViewControllerAnimated:YES completion:nil];
+                                                                         });
+                                                                     }];
+                
+                UIAlertAction *authorizeButton = [UIAlertAction actionWithTitle:@"Authorize"
+                                                                          style:UIAlertActionStyleDefault
+                                                                        handler:^(UIAlertAction *action){
+                                                                            UITextField *loginTextField    = authorizationPopup.textFields.firstObject;
+                                                                            UITextField *passwordTextField = authorizationPopup.textFields.lastObject;
+                                                                            
+                                                                            [self viewController:controller authorizeAncestryWithLogin:loginTextField.text password:passwordTextField.text token:accessToken];
+                                                                        }];
+                
+                [authorizationPopup addTextFieldWithConfigurationHandler:^(UITextField *textField) {
+                    [textField setKeyboardType:UIKeyboardTypeEmailAddress];
+                    textField.placeholder = @"enter login";
+                    textField.clearButtonMode = UITextFieldViewModeWhileEditing;
+                }];
+                
+                [authorizationPopup addTextFieldWithConfigurationHandler:^(UITextField *textField) {
+                    [textField setKeyboardType:UIKeyboardTypeDefault];
+                    textField.placeholder = @"enter password";
+                    textField.secureTextEntry = YES;
+                    textField.clearButtonMode = UITextFieldViewModeWhileEditing;
+                }];
+                
+                [authorizationPopup addAction:cancelButton];
+                [authorizationPopup addAction:authorizeButton];
+                [controller presentViewController:authorizationPopup animated:YES completion:nil];
+                
+            } else {
+                [self viewController:controller showAlertWithTitle:@"Authorization error" withMessage:@"User token is empty. Please reauthorize."];
                 [controller.view setUserInteractionEnabled:YES];
-                return;
             }
-            
-            self.token = accessToken;
-            [controller.view setUserInteractionEnabled:NO];
-            
-            UIAlertController *authorizationPopup = [UIAlertController alertControllerWithTitle:@"Ancestry files import"
-                                                                                        message:@"Please provide your credentials to authorize"
-                                                                                 preferredStyle:UIAlertControllerStyleAlert];
-            
-            UIAlertAction *cancelButton = [UIAlertAction actionWithTitle:@"Cancel"
-                                                                   style:UIAlertActionStyleCancel
-                                                                 handler:^(UIAlertAction *action){
-                                                                     dispatch_async(kMainQueue, ^{
-                                                                         UITextField *loginTextField = authorizationPopup.textFields.firstObject;
-                                                                         [loginTextField resignFirstResponder];
-                                                                         UITextField *passwordTextField = authorizationPopup.textFields.lastObject;
-                                                                         [passwordTextField resignFirstResponder];
-                                                                         
-                                                                         [controller.view endEditing:YES];
-                                                                         [controller.view setUserInteractionEnabled:YES];
-                                                                         [controller dismissViewControllerAnimated:YES completion:nil];
-                                                                     });
-                                                                 }];
-            
-            UIAlertAction *authorizeButton = [UIAlertAction actionWithTitle:@"Authorize"
-                                                                      style:UIAlertActionStyleDefault
-                                                                    handler:^(UIAlertAction *action){
-                                                                        UITextField *loginTextField    = authorizationPopup.textFields.firstObject;
-                                                                        UITextField *passwordTextField = authorizationPopup.textFields.lastObject;
-                                                                        
-                                                                        [self viewController:controller authorizeAncestryWithLogin:loginTextField.text password:passwordTextField.text token:accessToken];
-                                                                    }];
-            
-            [authorizationPopup addTextFieldWithConfigurationHandler:^(UITextField *textField) {
-                [textField setKeyboardType:UIKeyboardTypeEmailAddress];
-                textField.placeholder = @"enter login";
-                textField.clearButtonMode = UITextFieldViewModeWhileEditing;
-            }];
-            
-            [authorizationPopup addTextFieldWithConfigurationHandler:^(UITextField *textField) {
-                [textField setKeyboardType:UIKeyboardTypeDefault];
-                textField.placeholder = @"enter password";
-                textField.secureTextEntry = YES;
-                textField.clearButtonMode = UITextFieldViewModeWhileEditing;
-            }];
-            
-            [authorizationPopup addAction:cancelButton];
-            [authorizationPopup addAction:authorizeButton];
-            [controller presentViewController:authorizationPopup animated:YES completion:nil];
-            
         });
     }];
 }

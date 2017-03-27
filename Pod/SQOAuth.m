@@ -88,7 +88,7 @@ typedef NS_ENUM(NSInteger, ViewOrientation) {
     [self viewController:self.viewControllerDelegate showActivityIndicatorWithText:@"Authorizing user"];
     [self.viewControllerDelegate.view setUserInteractionEnabled:NO];
     
-    [[SQServerManager sharedInstance] authorizeUserForVC:self.delegate
+    [[SQServerManager sharedInstance] authorizeUserForVC:self.viewControllerDelegate
                                               withResult:^(SQToken *token, BOOL didCancel, BOOL error) {
                                                   dispatch_async(kMainQueue, ^{
                                                       
