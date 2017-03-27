@@ -20,7 +20,6 @@
 // THE SOFTWARE.
 //
 
-#import <CommonCrypto/CommonCryptor.h>
 #import <Foundation/Foundation.h>
 
 #define FBENCRYPT_ALGORITHM     kCCAlgorithmAES128

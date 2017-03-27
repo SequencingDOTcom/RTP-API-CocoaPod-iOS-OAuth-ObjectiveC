@@ -22,6 +22,6 @@ Pod::Spec.new do |s|
   s.source_files = 'Pod', 'Pod/**/*.{h,m}'  
   s.resources = ['Resources/*.*']
   s.requires_arc = true
-  s.public_header_files = '*.h'
+  
 
 end
