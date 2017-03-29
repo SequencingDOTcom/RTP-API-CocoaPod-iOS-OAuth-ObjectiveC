@@ -94,7 +94,7 @@ You need to follow instruction below if you want to install and use OAuth logic 
 	* create Podfile in your project directory: ```$ pod init```
     * specify "sequencing-oauth-api-objc" pod parameters in Podfile:
     
-    	```pod 'sequencing-oauth-api-objc', '~> 2.0.4’```
+    	```pod 'sequencing-oauth-api-objc', '~> 2.0.5’```
     	
 	* install the dependency in your project: ```$ pod install```
 	* always open the Xcode workspace instead of the project file: ```$ open *.xcworkspace```
@@ -135,7 +135,8 @@ You need to follow instruction below if you want to install and use OAuth logic 
                                  clientSecret:(NSString *)client_secret
                                   redirectUri:(NSString *)redirect_uri
                                         scope:(NSString *)scope
-                                     delegate:(UIViewController<SQAuthorizationProtocol> *)delegate;                                     
+                                     delegate:(id<SQAuthorizationProtocol>)delegate
+                       viewControllerDelegate:(UIViewController *)viewControllerDelegate                                     
 		``` 
 		
 		where:
@@ -144,7 +145,8 @@ You need to follow instruction below if you want to install and use OAuth logic 
 		client_secret - your app CLIENT_SECRET
 		redirect_uri - your app REDIRECT_URI
 		scope - your app SCOPE
-		delegate - UIViewController instance that conform to "SQAuthorizationProtocol" protocol
+		delegate - class that conforms to "SQAuthorizationProtocol" protocol
+		viewControllerDelegate - provide your class instance as UI delegate
 		```
 
 
@@ -178,9 +180,12 @@ You need to follow instruction below if you want to install and use OAuth logic 
 		
 	* to receive up-to-date token use ```token:``` method from SQOAuth API (it returns the updated token): 
 		```
-		[[SQOAuth sharedInstance] token:^(SQToken *token) {}];
+		- (void)token:(void(^)(SQToken *token, NSString *accessToken))tokenResult
 		```
+		
+		where SQToken is a instance of SQToken object, and accessToken as NSString
 
+    		
     		
 * **Register new account / Reset password methods**
 
@@ -188,8 +193,73 @@ You need to follow instruction below if you want to install and use OAuth logic 
 		```
 		[[SQOAuth sharedInstance] callRegisterResetAccountFlow];		
 		```
-				
 		
+		
+* **Connect To Sequencing method**
+
+	* add import 
+		```#import "SQConnectTo.h"```
+			
+	* call ```connectToSequencingWithCliendSecret: userEmail: filesArray: viewControllerDelegate:``` method
+		```
+		- (void)connectToSequencingWithCliendSecret:(id<SQClientSecretAccessProtocol>)clientSecretProvider
+                                  userEmail:(NSString *)emailAddress
+                                 filesArray:(NSArray *)filesArray
+                     viewControllerDelegate:(UIViewController *)viewControllerDelegate;
+        ```
+        
+        where
+        ```
+		clientSecretProvider - provide SQOAuth instance (as ```[SQOAuth sharedInstance]```)
+		emailAddress - your account email address
+		filesArray - NSArray of genetic files (see details below)
+		viewControllerDelegate - provide your class instance as UI delegate
+		```
+		
+		files should be passed on as NSArray object with NSDictionary file objects inside. Following keys and values should be used:
+		```
+		"name"		: file name as NSString
+		"type"		: NSString
+		"url"		: file url as NSString
+		"hashType"	: NSString
+		"hashValue"	: NSString
+		"size"		: NSString
+		```
+		
+		
+* **23andMe files import**
+
+	* add import 
+		```#import "SQ3rdPartyImportAPI.h"```
+		
+	* call ```importFrom23AndMeWithToken: viewControllerDelegate:``` method
+		```
+		- (void)importFrom23AndMeWithToken: (id<SQTokenAccessProtocol>)tokenProvider viewControllerDelegate:(UIViewController *)controller;
+		```
+		
+		where
+		```
+		tokenProvider - provide SQOAuth instance (as ```[SQOAuth sharedInstance]```)
+		viewControllerDelegate - provide your class instance as UI delegate
+		```
+
+
+* **Ancestry.com files import**
+
+	* add import 
+		```#import "SQ3rdPartyImportAPI.h"```
+		
+	* call ```importFromAncestryWithToken: viewControllerDelegate:``` method
+		```
+		- (void)importFromAncestryWithToken: (id<SQTokenAccessProtocol>)tokenProvider viewControllerDelegate:(UIViewController *)controller;
+		```
+		
+		where
+		```
+		tokenProvider - provide SQOAuth instance (as ```[SQOAuth sharedInstance]```)
+		viewControllerDelegate - provide your class instance as UI delegate
+		```
+
 
 
 Resources
