@@ -259,7 +259,6 @@ You need to follow instruction below if you want to install and use OAuth logic 
 		```
 
 
-
 Resources
 ======================================
 * [App chains](https://sequencing.com/app-chains)
