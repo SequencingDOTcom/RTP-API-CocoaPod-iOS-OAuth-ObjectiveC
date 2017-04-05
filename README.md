@@ -129,12 +129,13 @@ You need to follow instruction below if you want to install and use OAuth logic 
 		
 	* register your app parameters and delegate
 		```
-		- (void)registerApplicationParametersCliendID:(NSString *)client_id
-                                 clientSecret:(NSString *)client_secret
-                                  redirectUri:(NSString *)redirect_uri
-                                        scope:(NSString *)scope
-                                     delegate:(id<SQAuthorizationProtocol>)delegate
-                       viewControllerDelegate:(UIViewController *)viewControllerDelegate                                     
+		[[SQOAuth sharedInstance] registerApplicationParametersCliendID:@"your CLIENT_ID here"
+                                                       clientSecret:@"your CLIENT_SECRET here"
+                                                        redirectUri:@"REDIRECT_URI here"
+                                                              scope:@"SCOPE here"
+                                                           delegate:<your class delegate>
+                                             viewControllerDelegate:<your VC delegate>];
+                                             
 		``` 
 		
 		where:
@@ -178,7 +179,8 @@ You need to follow instruction below if you want to install and use OAuth logic 
 		
 	* to receive up-to-date token use ```token:``` method from SQOAuth API (it returns the updated token): 
 		```
-		- (void)token:(void(^)(SQToken *token, NSString *accessToken))tokenResult
+		[[SQOAuth sharedInstance] token:^(SQToken *token, NSString *accessToken) {
+		}];
 		```
 		
 		where SQToken is a instance of SQToken object, and accessToken as NSString
@@ -200,10 +202,11 @@ You need to follow instruction below if you want to install and use OAuth logic 
 			
 	* call ```connectToSequencingWithCliendSecret: userEmail: filesArray: viewControllerDelegate:``` method
 		```
-		- (void)connectToSequencingWithCliendSecret:(id<SQClientSecretAccessProtocol>)clientSecretProvider
-                                  userEmail:(NSString *)emailAddress
-                                 filesArray:(NSArray *)filesArray
-                     viewControllerDelegate:(UIViewController *)viewControllerDelegate;
+		SQConnectTo *connectTo = [[SQConnectTo alloc] init];
+		[connectTo connectToSequencingWithCliendSecret:[SQOAuth sharedInstance]
+                                         	 userEmail:@"your email address"
+                                        	filesArray:<your files array>
+                            	viewControllerDelegate:<your VC delegate>];
         ```
         
         where
@@ -232,7 +235,8 @@ You need to follow instruction below if you want to install and use OAuth logic 
 		
 	* call ```importFrom23AndMeWithToken: viewControllerDelegate:``` method
 		```
-		- (void)importFrom23AndMeWithToken: (id<SQTokenAccessProtocol>)tokenProvider viewControllerDelegate:(UIViewController *)controller;
+		SQ3rdPartyImportAPI *importAPI = [[SQ3rdPartyImportAPI alloc] init];
+		[importAPI importFrom23AndMeWithToken:[SQOAuth sharedInstance] viewControllerDelegate:<your VC delegate>];
 		```
 		
 		where
@@ -249,7 +253,8 @@ You need to follow instruction below if you want to install and use OAuth logic 
 		
 	* call ```importFromAncestryWithToken: viewControllerDelegate:``` method
 		```
-		- (void)importFromAncestryWithToken: (id<SQTokenAccessProtocol>)tokenProvider viewControllerDelegate:(UIViewController *)controller;
+		SQ3rdPartyImportAPI *importAPI = [[SQ3rdPartyImportAPI alloc] init];
+		[importAPI importFromAncestryWithToken:[SQOAuth sharedInstance] viewControllerDelegate:<your VC delegate>];
 		```
 		
 		where
